@@ -88,6 +88,10 @@ td input{width:100%;border:0;outline:0;background:transparent}
 @media screen{.print-report{max-width:210mm;margin:25px auto;background:#fff;padding:10mm;box-shadow:0 2px 12px #0002}}
 
 .login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#eef1eb,#f7f4f8);display:flex;align-items:center;justify-content:center;z-index:99999}.login-box{width:min(420px,92vw);background:#fff;border:1px solid #ddd;border-radius:16px;padding:34px;box-shadow:0 12px 40px #0002;text-align:left}.login-logo{display:block;max-width:250px;max-height:90px;margin:0 auto 24px;object-fit:contain}.login-title{font-size:22px;font-weight:700;text-align:center;margin-bottom:6px}.login-subtitle{text-align:center;color:#777;font-size:13px;margin-bottom:24px}.login-field{margin-bottom:14px}.login-field label{display:block;font-size:12px;color:#666;margin-bottom:5px}.login-field input{width:100%;padding:12px;border:1px solid #cfcfcf;border-radius:8px;outline:none}.login-field input:focus{border-color:#68705d;box-shadow:0 0 0 2px #68705d22}.login-btn{width:100%;padding:12px;background:#68705d;color:#fff;font-weight:700}.login-error{min-height:18px;color:#b42318;font-size:12px;text-align:center;margin:10px 0}.logout-btn{background:#eee;color:#333}.app-locked{overflow:hidden}
+
+.offer-directory{position:fixed;left:0;top:73px;bottom:0;width:292px;background:#fff;border-right:1px solid #ddd;overflow:auto;padding:16px 12px;z-index:4}.offer-directory h3{margin:2px 6px 12px;font-size:15px;color:#394b2e}.directory-status{font-size:11px;color:#888;padding:0 6px 10px}.offer-tree{font-size:13px}.offer-node{margin-bottom:5px}.offer-row{display:flex;align-items:center;gap:5px;padding:8px 7px;border-radius:7px;cursor:pointer}.offer-row:hover{background:#f2f4ef}.offer-row.active{background:#e7ecdf}.offer-arrow{width:18px;color:#68705d;font-size:11px;text-align:center}.offer-name{font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.offer-customer{display:block;font-size:11px;color:#777;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.revision-list{margin-left:24px;border-left:1px solid #ddd;padding-left:8px}.revision-row{display:flex;align-items:center;gap:7px;padding:6px 7px;border-radius:6px;cursor:pointer;color:#555}.revision-row:hover{background:#f5f5f5;color:#222}.revision-row.active{background:#eef1eb;color:#394b2e;font-weight:700}.revision-dot{width:6px;height:6px;border-radius:50%;background:#a7b39a;flex:0 0 auto}.directory-empty{font-size:12px;color:#888;padding:12px 6px}.editor.wrap{margin-left:312px;margin-right:18px;max-width:none}.directory-refresh{float:right;padding:4px 7px;background:#eee;border-radius:5px;font-size:11px}
+@media(max-width:900px){.offer-directory{position:static;width:auto;height:auto;max-height:260px;border-right:0;border-bottom:1px solid #ddd;margin:0 8px 12px;border-radius:8px}.editor.wrap{margin:12px 8px;max-width:none}.offer-directory h3{margin-top:0}}
+@media print{.offer-directory{display:none!important}.editor.wrap{margin:0!important;max-width:none!important}}
 </style>
 </head>
 <body class="app-locked">
@@ -113,6 +117,12 @@ td input{width:100%;border:0;outline:0;background:transparent}
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 </div>
+
+<aside id="offerDirectory" class="offer-directory no-print">
+  <h3>Saved Offers <button class="directory-refresh" onclick="refreshOfferDirectory()">↻</button></h3>
+  <div id="directoryStatus" class="directory-status">Loading...</div>
+  <div id="offerTree" class="offer-tree"></div>
+</aside>
 
 <div class="wrap editor">
   <div class="card">
@@ -143,8 +153,8 @@ td input{width:100%;border:0;outline:0;background:transparent}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL="";
-const SUPABASE_ANON_KEY="";
+const SUPABASE_URL="https://vsmxadujfwonsxsrcepf.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_HA_KN4AStZsStOvNcefZGQ_OBmhF_1X";
 const SUPABASE_LOGIN_EMAILS={maris:"maris@plant-olive.com"};
 const supabaseReady=!!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase);
 const sb=supabaseReady ? window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY) : null;
@@ -274,37 +284,90 @@ async function save(){
     await sb.from("offers").update({current_revision:nextRevision,updated_at:new Date().toISOString()}).eq("id",o.id);
     o.revision=nextRevision;
     alert("Offer saved as Revision "+nextRevision+".");
+    await refreshOfferDirectory();
     return;
   }
   let a=JSON.parse(localStorage.getItem("poOffers")||"[]"),i=a.findIndex(x=>x.id===o.id);
   if(i>=0){o.revision=(o.revision||0)+1;a[i]=o}else{o.revision=1;a.push(o)}
   localStorage.setItem("poOffers",JSON.stringify(a));alert("Offer saved as Revision "+o.revision+" (local browser storage). Connect Supabase for cloud storage.");
+  renderOfferDirectoryLocal();
 }
 async function openSaved(){
-  if(supabaseReady){
-    const {data:{user}}=await sb.auth.getUser();
-    if(!user){alert("Please log in again.");return;}
-    const {data:rows,error}=await sb.from("offers").select("id,offer_no,customer,title,current_revision,updated_at").order("updated_at",{ascending:false});
-    if(error){alert("Could not load offers: "+error.message);return;}
-    if(!rows?.length){alert("No saved offers.");return;}
-    const choices=rows.map((x,i)=>(i+1)+". "+(x.offer_no||"Draft")+" — "+(x.customer||"No customer")+" — Rev. "+(x.current_revision||0)).join("\n");
-    const n=prompt(choices+"\n\nEnter offer number:");
-    const row=rows[Number(n)-1];
-    if(!row)return;
-    const {data:rev,error:revError}=await sb.from("offer_revisions").select("snapshot,revision_no").eq("offer_id",row.id).order("revision_no",{ascending:false}).limit(1).single();
-    if(revError){alert("Could not open offer: "+revError.message);return;}
-    o=rev.snapshot;o.revision=rev.revision_no;render();
-    return;
-  }
-  let a=JSON.parse(localStorage.getItem("poOffers")||"[]");if(!a.length)return alert("No saved offers.");
-  let msg=a.map((x,i)=>(i+1)+". "+(x.no||"Draft")+" — "+(x.customer||"No customer")+" — Rev. "+(x.revision||1)).join("\n");
-  let n=prompt(msg+"\n\nEnter number:");if(n&&a[+n-1]){o=a[+n-1];render()}
+  await refreshOfferDirectory();
+  const tree=document.getElementById("offerTree");
+  if(tree) tree.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
-async function loadOffersFromCloud(){
+
+async function loadRevision(offerId, revisionNo){
   if(!supabaseReady)return;
-  const {data:{user}}=await sb.auth.getUser();
-  if(user) document.getElementById("responsible")?.setAttribute("data-user-id",user.id);
+  const {data:rev,error}=await sb.from("offer_revisions").select("snapshot,revision_no").eq("offer_id",offerId).eq("revision_no",revisionNo).single();
+  if(error){alert("Could not open Revision "+revisionNo+": "+error.message);return;}
+  o=rev.snapshot;
+  o.revision=rev.revision_no;
+  render();
+  await refreshOfferDirectory();
 }
+
+async function loadLatestOffer(offerId){
+  if(!supabaseReady)return;
+  const {data:rev,error}=await sb.from("offer_revisions").select("snapshot,revision_no").eq("offer_id",offerId).order("revision_no",{ascending:false}).limit(1).single();
+  if(error){alert("Could not open offer: "+error.message);return;}
+  o=rev.snapshot;o.revision=rev.revision_no;render();await refreshOfferDirectory();
+}
+
+function directoryOfferHtml(row,revisions){
+  const expanded=true;
+  const activeOffer=(o.id===row.id);
+  const revHtml=revisions.map(r=>{
+    const active=(o.id===row.id && Number(o.revision||0)===Number(r.revision_no));
+    return `<div class="revision-row ${active?'active':''}" onclick="loadRevision(${Number(row.id)},${Number(r.revision_no)})" title="Open Revision ${Number(r.revision_no)}">
+      <span class="revision-dot"></span><span>Revision ${Number(r.revision_no)}</span><span style="margin-left:auto;font-size:10px;color:#999">${new Date(r.created_at).toLocaleDateString('en-GB')}</span>
+    </div>`;
+  }).join("");
+  return `<div class="offer-node">
+    <div class="offer-row ${activeOffer?'active':''}" onclick="loadLatestOffer(${Number(row.id)})" title="Open latest revision">
+      <span class="offer-arrow">▾</span><span class="offer-name">${esc(row.offer_no||'Draft')}<span class="offer-customer">${esc(row.customer||'No customer')}</span></span>
+      <span style="font-size:10px;color:#888">R${Number(row.current_revision||0)}</span>
+    </div>
+    <div class="revision-list">${revHtml || '<div class="directory-empty">No revisions</div>'}</div>
+  </div>`;
+}
+
+async function refreshOfferDirectory(){
+  if(!supabaseReady){renderOfferDirectoryLocal();return;}
+  const status=document.getElementById("directoryStatus"),tree=document.getElementById("offerTree");
+  if(!tree)return;
+  const {data:{user}}=await sb.auth.getUser();
+  if(!user){status.textContent="Please log in";tree.innerHTML="";return;}
+  status.textContent="Loading offers...";
+  const {data:rows,error}=await sb.from("offers").select("id,offer_no,customer,title,current_revision,updated_at").order("updated_at",{ascending:false});
+  if(error){status.textContent="Could not load offers";tree.innerHTML='<div class="directory-empty">'+esc(error.message)+'</div>';return;}
+  if(!rows?.length){status.textContent="No saved offers yet";tree.innerHTML='<div class="directory-empty">Save your first offer and it will appear here.</div>';return;}
+  const ids=rows.map(r=>r.id);
+  const {data:revs,error:revError}=await sb.from("offer_revisions").select("offer_id,revision_no,created_at").in("offer_id",ids).order("revision_no",{ascending:false});
+  if(revError){status.textContent="Offers loaded";tree.innerHTML=rows.map(r=>directoryOfferHtml(r,[])).join("");return;}
+  const byOffer={};(revs||[]).forEach(r=>{(byOffer[r.offer_id] ||= []).push(r)});
+  status.textContent=rows.length+" offer"+(rows.length===1?'':'s');
+  tree.innerHTML=rows.map(r=>directoryOfferHtml(r,byOffer[r.id]||[])).join("");
+}
+
+function renderOfferDirectoryLocal(){
+  const status=document.getElementById("directoryStatus"),tree=document.getElementById("offerTree");if(!tree)return;
+  const a=JSON.parse(localStorage.getItem("poOffers")||"[]");
+  if(!a.length){status.textContent="No saved offers yet";tree.innerHTML='<div class="directory-empty">Save your first offer and it will appear here.</div>';return;}
+  status.textContent=a.length+" offer"+(a.length===1?'':'s');
+  tree.innerHTML=a.map(row=>{
+    const active=o.id===row.id;
+    const rev=Number(row.revision||1);
+    return `<div class="offer-node"><div class="offer-row ${active?'active':''}" onclick="o=JSON.parse(JSON.stringify(window._localOffers.find(x=>x.id===${Number(row.id)})));render();renderOfferDirectoryLocal()"><span class="offer-arrow">▾</span><span class="offer-name">${esc(row.no||'Draft')}<span class="offer-customer">${esc(row.customer||'No customer')}</span></span><span style="font-size:10px;color:#888">R${rev}</span></div><div class="revision-list"><div class="revision-row ${active?'active':''}"><span class="revision-dot"></span><span>Revision ${rev}</span></div></div></div>`;
+  }).join("");
+  window._localOffers=a;
+}
+
+function loadOffersFromCloud(){
+  if(supabaseReady) refreshOfferDirectory(); else renderOfferDirectoryLocal();
+}
+
 function preparePrint(){
   let bases={},vatTotal=0,total=0;
   o.sections.forEach(s=>s.items.forEach(i=>{
@@ -393,6 +456,7 @@ if(supabaseReady){
   });
 }else if(sessionStorage.getItem("plantOliveLoggedIn")==="1") showApp();
 newOffer();
+setTimeout(()=>loadOffersFromCloud(),100);
 </script>
 </body>
 </html>
