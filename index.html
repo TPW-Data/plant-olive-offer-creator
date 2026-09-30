@@ -317,7 +317,7 @@ const LOGO_DATA='data:image/jpeg;base64,/9j/4AAQSkZJRgABAgEAJAAkAAD/7QAsUGhvdG9z
 
 let o={id:Date.now(),no:"",date:new Date().toISOString().slice(0,10),valid:"",resp:"",customer:"",address:"",title:"PRIJEDLOG RADOVA U UREĐENJU OKOLIŠA",sections:[]};
 const E=n=>new Intl.NumberFormat("hr-HR",{style:"currency",currency:"EUR"}).format(Number(n)||0);
-const N=n=>new Intl.NumberFormat("hr-HR",{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(n)||0);
+const N=n=>new Intl.NumberFormat("en-US",{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:true}).format(Number(n)||0);
 const A=i=>(+i.qty||0)*(+i.price||0)*(1-(+i.discount||0)/100);
 const esc=s=>String(s??"").replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 const text=s=>esc(s).replaceAll("\n","<br>");
@@ -375,10 +375,21 @@ function render(){
       let tr=document.createElement("tr");
       tr.innerHTML='<td>'+(ii+1)+'</td><td><input data-k="desc"></td><td><input data-k="unit"></td><td><input type="number" step="0.001" data-k="qty"></td><td><input type="number" step="0.01" data-k="price"></td><td><input type="number" step="0.01" data-k="discount"></td><td><input type="number" step="0.01" data-k="vat"></td><td class="money">'+E(A(it))+'</td><td><button class="no-print">✕</button></td>';
       tr.querySelectorAll("input").forEach(x=>{
-        let k=x.dataset.k;x.value=it[k];
-        x.oninput=()=>{it[k]=["desc","unit"].includes(k)?x.value:+x.value;
+        let k=x.dataset.k;
+        const numeric=!(["desc","unit"].includes(k));
+        x.value=numeric?N(it[k]):it[k];
+        x.style.textAlign="right";
+        if(numeric){
+          x.onfocus=()=>{ x.value=String(it[k] ?? "").replace(/,/g,""); x.select(); };
+        }
+        x.oninput=()=>{
+          it[k]=["desc","unit"].includes(k)?x.value:Number(String(x.value).replace(/,/g,""))||0;
           const amountCell=tr.children[7];if(amountCell)amountCell.textContent=E(A(it));
-          stTemp.textContent="UKUPNO: "+E(s.items.reduce((sum,item)=>sum+A(item),0));updateSummaryOnly();};
+          stTemp.textContent="UKUPNO: "+E(s.items.reduce((sum,item)=>sum+A(item),0));updateSummaryOnly();
+        };
+        if(numeric){
+          x.onblur=()=>{ x.value=N(it[k]); };
+        }
       });
       tr.querySelector("button").onclick=()=>{s.items.splice(ii,1);render()};tb.append(tr);
     });
