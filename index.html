@@ -128,7 +128,7 @@ td input{width:100%;border:0;outline:0;background:transparent}
   <div class="card">
     <h2>Offer Information</h2>
     <div class="grid">
-      <div class="field"><label>Offer No.</label><input id="no"></div>
+      <div class="field"><label>Offer No.</label><input id="no" type="text" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="off"></div>
       <div class="field"><label>Date</label><input id="date" type="date"></div>
       <div class="field"><label>Valid Until</label><input id="valid" type="date"></div>
       <div class="field"><label>Responsible Person</label><input id="resp"></div>
@@ -172,7 +172,7 @@ async function seedInitialOffer(){
   const {data:{user}}=await sb.auth.getUser();
   if(!user) return;
 
-  const offerNo="2607-MC-00";
+  const offerNo="2607";
   const {data:existing,error:findError}=await sb.from("offers")
     .select("id,current_revision")
     .eq("offer_no",offerNo)
@@ -186,7 +186,7 @@ async function seedInitialOffer(){
 
   const snapshot={
     id:2607000001,
-    no:"2607-MC-00",
+    no:"2607",
     date:"2026-09-30",
     valid:"2026-10-15",
     resp:"CAM MONIKA",
@@ -317,7 +317,7 @@ const LOGO_DATA='data:image/jpeg;base64,/9j/4AAQSkZJRgABAgEAJAAkAAD/7QAsUGhvdG9z
 
 let o={id:Date.now(),no:"",date:new Date().toISOString().slice(0,10),valid:"",resp:"",customer:"",address:"",title:"PRIJEDLOG RADOVA U UREĐENJU OKOLIŠA",sections:[]};
 const E=n=>new Intl.NumberFormat("hr-HR",{style:"currency",currency:"EUR"}).format(Number(n)||0);
-const N=n=>new Intl.NumberFormat("en-US",{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:true}).format(Number(n)||0);
+const N=n=>new Intl.NumberFormat("hr-HR",{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:true}).format(Number(n)||0);
 const A=i=>(+i.qty||0)*(+i.price||0)*(1-(+i.discount||0)/100);
 const esc=s=>String(s??"").replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 const text=s=>esc(s).replaceAll("\n","<br>");
@@ -343,6 +343,7 @@ function sync(){
     x.value=o[k]||"";
     if(k==="date") x.oninput=()=>{ o.date=x.value; o.valid=addDaysToDateString(o.date,15); const v=document.getElementById("valid"); if(v) v.value=o.valid; };
     else if(k==="valid") { x.readOnly=true; x.title="Automatski: datum ponude + 15 dana"; }
+    else if(k==="no") x.oninput=()=>{ x.value=x.value.replace(/\D/g,"").slice(0,4); o[k]=x.value; };
     else x.oninput=()=>o[k]=x.value;
   }
   if(o.date){
@@ -373,7 +374,7 @@ function render(){
     stTemp.textContent="UKUPNO: "+E(s.items.reduce((x,i)=>x+A(i),0));
     s.items.forEach((it,ii)=>{
       let tr=document.createElement("tr");
-      tr.innerHTML='<td>'+(ii+1)+'</td><td><input data-k="desc"></td><td><input data-k="unit"></td><td><input type="number" step="0.001" data-k="qty"></td><td><input type="number" step="0.01" data-k="price"></td><td><input type="number" step="0.01" data-k="discount"></td><td><input type="number" step="0.01" data-k="vat"></td><td class="money">'+E(A(it))+'</td><td><button class="no-print">✕</button></td>';
+      tr.innerHTML='<td>'+(ii+1)+'</td><td><input data-k="desc"></td><td><input data-k="unit"></td><td><input type="text" inputmode="decimal" data-k="qty"></td><td><input type="text" inputmode="decimal" data-k="price"></td><td><input type="text" inputmode="decimal" data-k="discount"></td><td><input type="text" inputmode="decimal" data-k="vat"></td><td class="money">'+E(A(it))+'</td><td><button class="no-print">✕</button></td>';
       tr.querySelectorAll("input").forEach(x=>{
         let k=x.dataset.k;
         const numeric=!(["desc","unit"].includes(k));
@@ -408,6 +409,13 @@ function updateSummaryOnly(){
   document.getElementById("summary").innerHTML=h;
 }
 async function save(){
+  o.no=String(o.no||"").replace(/\D/g,"").slice(0,4);
+  document.getElementById("no").value=o.no;
+  if(!/^\d{4}$/.test(o.no)){
+    alert("Offer No. must contain exactly 4 digits (numbers only). Example: 2607");
+    document.getElementById("no").focus();
+    return;
+  }
   if(supabaseReady){
     const {data:{user}}=await sb.auth.getUser();
     if(!user){alert("Please log in again.");return;}
