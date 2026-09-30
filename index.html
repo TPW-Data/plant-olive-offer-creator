@@ -210,12 +210,37 @@ const A=i=>(+i.qty||0)*(+i.price||0)*(1-(+i.discount||0)/100);
 const esc=s=>String(s??"").replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 const text=s=>esc(s).replaceAll("\n","<br>");
 
+function localDateString(d=new Date()){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,"0");
+  const day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function addDaysToDateString(dateString,days=15){
+  if(!dateString) return "";
+  const parts=dateString.split("-").map(Number);
+  if(parts.length!==3 || parts.some(Number.isNaN)) return "";
+  const d=new Date(parts[0],parts[1]-1,parts[2]);
+  d.setDate(d.getDate()+days);
+  return localDateString(d);
+}
 function sync(){
   let m={no:"no",date:"date",valid:"valid",resp:"resp",customer:"customer",address:"address",title:"title"};
-  for(const k in m){let x=document.getElementById(m[k]);x.value=o[k]||"";x.oninput=()=>o[k]=x.value}
+  for(const k in m){
+    let x=document.getElementById(m[k]);
+    x.value=o[k]||"";
+    if(k==="date") x.oninput=()=>{ o.date=x.value; o.valid=addDaysToDateString(o.date,15); const v=document.getElementById("valid"); if(v) v.value=o.valid; };
+    else if(k==="valid") { x.readOnly=true; x.title="Automatski: datum ponude + 15 dana"; }
+    else x.oninput=()=>o[k]=x.value;
+  }
+  if(o.date){
+    o.valid=addDaysToDateString(o.date,15);
+    const v=document.getElementById("valid"); if(v) v.value=o.valid;
+  }
 }
 function newOffer(){
-  o={id:Date.now(),no:"",date:new Date().toISOString().slice(0,10),valid:"",resp:"",customer:"",address:"",title:"PRIJEDLOG RADOVA U UREĐENJU OKOLIŠA",sections:[]};
+  const today=localDateString();
+  o={id:Date.now(),no:"",date:today,valid:addDaysToDateString(today,15),resp:"",customer:"",address:"",title:"PRIJEDLOG RADOVA U UREĐENJU OKOLIŠA",sections:[]};
   addSection();
 }
 function addSection(){o.sections.push({name:"",items:[]});render()}
