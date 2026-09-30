@@ -141,7 +141,13 @@ td input{width:100%;border:0;outline:0;background:transparent}
 
 <div id="printReport" class="print-report"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const SUPABASE_URL="";
+const SUPABASE_ANON_KEY="";
+const SUPABASE_LOGIN_EMAILS={maris:"maris@plant-olive.com"};
+const supabaseReady=!!(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase);
+const sb=supabaseReady ? window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY) : null;
 const LOGIN_USER="maris";
 const LOGIN_PASS="plantolive";
 
@@ -150,11 +156,21 @@ function showApp(){
   if(overlay) overlay.style.display="none";
   document.body.classList.remove("app-locked");
 }
-function doLogin(event){
+async function doLogin(event){
   event.preventDefault();
-  const u=document.getElementById("loginUsername").value.trim();
+  const u=document.getElementById("loginUsername").value.trim().toLowerCase();
   const p=document.getElementById("loginPassword").value;
   const err=document.getElementById("loginError");
+  err.textContent="";
+  if(supabaseReady){
+    const email=SUPABASE_LOGIN_EMAILS[u];
+    if(!email){err.textContent="Incorrect username or password.";return false;}
+    const {error}=await sb.auth.signInWithPassword({email,password:p});
+    if(error){err.textContent="Incorrect username or password.";return false;}
+    showApp();
+    await loadOffersFromCloud();
+    return false;
+  }
   if(u===LOGIN_USER && p===LOGIN_PASS){
     sessionStorage.setItem("plantOliveLoggedIn","1");
     showApp();
@@ -164,7 +180,8 @@ function doLogin(event){
   document.getElementById("loginPassword").select();
   return false;
 }
-function logout(){
+async function logout(){
+  if(supabaseReady) await sb.auth.signOut();
   sessionStorage.removeItem("plantOliveLoggedIn");
   document.getElementById("loginUsername").value="";
   document.getElementById("loginPassword").value="";
@@ -232,16 +249,62 @@ function updateSummaryOnly(){
   h+='<div class="sum"><span>UKUPNO OSNOVICA</span><b>'+E(total)+'</b></div><div class="sum"><span>UKUPNO PDV</span><b>'+E(vat)+'</b></div><div class="sum grand"><span>SVEUKUPNO</span><b>'+E(total+vat)+'</b></div>';
   document.getElementById("summary").innerHTML=h;
 }
-function save(){
+async function save(){
+  if(supabaseReady){
+    const {data:{user}}=await sb.auth.getUser();
+    if(!user){alert("Please log in again.");return;}
+    const {data:offerRow,error:offerError}=await sb.from("offers").upsert({
+      id:o.id,
+      offer_no:o.no||null,
+      customer:o.customer||null,
+      title:o.title||null,
+      current_revision:o.revision||0,
+      updated_at:new Date().toISOString(),
+      created_by:user.id
+    },{onConflict:"id"}).select().single();
+    if(offerError){alert("Could not save offer: "+offerError.message);return;}
+    const nextRevision=(offerRow.current_revision||0)+1;
+    const {error:revError}=await sb.from("offer_revisions").insert({
+      offer_id:o.id,
+      revision_no:nextRevision,
+      snapshot:o,
+      created_by:user.id
+    });
+    if(revError){alert("Offer header was saved, but revision failed: "+revError.message);return;}
+    await sb.from("offers").update({current_revision:nextRevision,updated_at:new Date().toISOString()}).eq("id",o.id);
+    o.revision=nextRevision;
+    alert("Offer saved as Revision "+nextRevision+".");
+    return;
+  }
   let a=JSON.parse(localStorage.getItem("poOffers")||"[]"),i=a.findIndex(x=>x.id===o.id);
-  if(i>=0)a[i]=o;else a.push(o);localStorage.setItem("poOffers",JSON.stringify(a));alert("Offer saved.");
+  if(i>=0){o.revision=(o.revision||0)+1;a[i]=o}else{o.revision=1;a.push(o)}
+  localStorage.setItem("poOffers",JSON.stringify(a));alert("Offer saved as Revision "+o.revision+" (local browser storage). Connect Supabase for cloud storage.");
 }
-function openSaved(){
+async function openSaved(){
+  if(supabaseReady){
+    const {data:{user}}=await sb.auth.getUser();
+    if(!user){alert("Please log in again.");return;}
+    const {data:rows,error}=await sb.from("offers").select("id,offer_no,customer,title,current_revision,updated_at").order("updated_at",{ascending:false});
+    if(error){alert("Could not load offers: "+error.message);return;}
+    if(!rows?.length){alert("No saved offers.");return;}
+    const choices=rows.map((x,i)=>(i+1)+". "+(x.offer_no||"Draft")+" — "+(x.customer||"No customer")+" — Rev. "+(x.current_revision||0)).join("\n");
+    const n=prompt(choices+"\n\nEnter offer number:");
+    const row=rows[Number(n)-1];
+    if(!row)return;
+    const {data:rev,error:revError}=await sb.from("offer_revisions").select("snapshot,revision_no").eq("offer_id",row.id).order("revision_no",{ascending:false}).limit(1).single();
+    if(revError){alert("Could not open offer: "+revError.message);return;}
+    o=rev.snapshot;o.revision=rev.revision_no;render();
+    return;
+  }
   let a=JSON.parse(localStorage.getItem("poOffers")||"[]");if(!a.length)return alert("No saved offers.");
-  let msg=a.map((x,i)=>(i+1)+". "+(x.no||"Draft")+" — "+(x.customer||"No customer")).join("\n");
+  let msg=a.map((x,i)=>(i+1)+". "+(x.no||"Draft")+" — "+(x.customer||"No customer")+" — Rev. "+(x.revision||1)).join("\n");
   let n=prompt(msg+"\n\nEnter number:");if(n&&a[+n-1]){o=a[+n-1];render()}
 }
-
+async function loadOffersFromCloud(){
+  if(!supabaseReady)return;
+  const {data:{user}}=await sb.auth.getUser();
+  if(user) document.getElementById("responsible")?.setAttribute("data-user-id",user.id);
+}
 function preparePrint(){
   let bases={},vatTotal=0,total=0;
   o.sections.forEach(s=>s.items.forEach(i=>{
@@ -324,7 +387,11 @@ const screenLogo=document.getElementById("screenLogo");
 const loginLogo=document.getElementById("loginLogo");
 if(screenLogo) screenLogo.src=LOGO_DATA;
 if(loginLogo) loginLogo.src=LOGO_DATA;
-if(sessionStorage.getItem("plantOliveLoggedIn")==="1") showApp();
+if(supabaseReady){
+  sb.auth.getSession().then(async ({data:{session}})=>{
+    if(session){showApp();await loadOffersFromCloud();}
+  });
+}else if(sessionStorage.getItem("plantOliveLoggedIn")==="1") showApp();
 newOffer();
 </script>
 </body>
