@@ -102,7 +102,7 @@ td input{width:100%;border:0;outline:0;background:transparent}
 .stock-search input{width:330px;border:1px solid #cfd8d0;border-radius:8px;padding:9px 11px;font-size:13px}
 .stock-close{border:0;background:#244d32;color:#fff;border-radius:8px;padding:9px 12px;cursor:pointer;font-weight:700}
 .stock-table-wrap{overflow:auto;flex:1}
-.stock-table{width:100%;border-collapse:collapse;font-size:12px}
+.stock-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}.stock-table th:nth-child(1),.stock-table td:nth-child(1){width:5%}.stock-table th:nth-child(2),.stock-table td:nth-child(2){width:13%}.stock-table th:nth-child(3),.stock-table td:nth-child(3){width:43%}.stock-table th:nth-child(4),.stock-table td:nth-child(4){width:10%}.stock-table th:nth-child(5),.stock-table td:nth-child(5){width:12%}.stock-table th:nth-child(6),.stock-table td:nth-child(6){width:8%}.stock-table th:nth-child(7),.stock-table td:nth-child(7){width:9%}
 .stock-table th{position:sticky;top:0;background:#eef4ee;color:#35533f;text-align:left;padding:9px 10px;border-bottom:1px solid #d7e0d8;z-index:2}
 .stock-table td{padding:8px 10px;border-bottom:1px solid #edf0ed;vertical-align:top}
 .stock-table tbody tr{cursor:pointer}
@@ -118,6 +118,69 @@ td input{width:100%;border:0;outline:0;background:transparent}
 .desc-cell{position:relative}
 .desc-cell>input{width:100%}
 @media(max-width:900px){.stock-panel{inset:60px 6px 6px}.stock-search input{width:180px}}
+
+/* MOBILE APP LAYOUT */
+.mobile-menu-btn{display:none}
+@media(max-width:700px){
+  body{background:#f5f6f4;-webkit-text-size-adjust:100%}
+  .top{position:sticky;top:0;padding:8px 10px;display:block;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+  .brand{height:42px;display:flex;align-items:center;justify-content:space-between;font-size:15px}
+  .brand img{height:34px!important;max-width:155px}
+  .actions{display:flex;gap:6px;overflow-x:auto;padding:7px 0 1px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .actions::-webkit-scrollbar{display:none}
+  .actions button{flex:0 0 auto;padding:9px 11px;font-size:12px;min-height:38px}
+  .mobile-menu-btn{display:inline-block;background:#eef2eb;color:#394b2e;font-weight:700}
+  .offer-directory{position:fixed;left:-310px;top:0;bottom:0;width:292px;max-height:none;margin:0;border:0;border-radius:0;box-shadow:8px 0 30px rgba(0,0,0,.18);z-index:200;padding:16px 12px;transition:left .22s ease}
+  .offer-directory.mobile-open{left:0}
+  .offer-directory h3{margin-top:4px}
+  .offer-directory h3:after{content:'Tap an offer or revision to open it';display:block;font-size:10px;font-weight:400;color:#888;margin-top:5px}
+  .editor.wrap{margin:10px 7px!important;padding:0;max-width:none}
+  .card{padding:12px;margin-bottom:10px;border-radius:12px;box-shadow:0 1px 5px rgba(0,0,0,.05)}
+  h2{font-size:15px;margin-bottom:11px}
+  .grid{grid-template-columns:1fr 1fr;gap:9px}
+  .field input{padding:11px 9px;font-size:16px;min-height:43px}
+  .field label{font-size:11px}
+  .field[style*="grid-column:span 2"]{grid-column:1/-1!important}
+  .section{margin-top:11px;border-radius:10px;overflow:hidden}
+  .section-title{padding:10px 9px;min-height:44px}
+  .section-title input{font-size:15px;min-width:0}
+  .section table{display:block;width:100%}
+  .section table thead{display:none}
+  .section table tbody{display:block;width:100%}
+  .section table tr{display:grid;grid-template-columns:1fr 1fr;position:relative;width:100%;border-bottom:1px solid #c8c8c8;background:#fff;padding-top:28px}
+  .section table td{display:flex;align-items:center;min-height:48px;padding:7px 8px;border:0;border-top:1px solid #e5e5e5;font-size:12px}
+  .section table td:before{font-size:10px;color:#777;font-weight:700;margin-right:7px;flex:0 0 auto}
+  .section table td:nth-child(1){position:absolute;top:0;left:0;border:0;min-height:27px;padding:5px 8px;color:#777;font-weight:700}
+  .section table td:nth-child(1):before{content:'#';margin-right:3px}
+  .section table td:nth-child(2){grid-column:1/-1;display:block;padding-top:9px}
+  .section table td:nth-child(2):before{content:'Naziv';display:block;margin:0 0 4px}
+  .section table td:nth-child(3):before{content:'J.MJ'}
+  .section table td:nth-child(4):before{content:'KOL'}
+  .section table td:nth-child(5):before{content:'J.C.'}
+  .section table td:nth-child(6):before{content:'Popust %'}
+  .section table td:nth-child(7):before{content:'PDV %'}
+  .section table td:nth-child(8){grid-column:1/-1;justify-content:flex-end;background:#f7f8f6;font-weight:700;min-height:44px}
+  .section table td:nth-child(8):before{content:'Iznos bez PDV-a';margin-right:auto}
+  .section table td:nth-child(9){position:absolute;right:0;top:0;border:0;min-height:27px;padding:3px 6px}
+  .section table td:nth-child(9) button{padding:4px 7px;font-size:12px}
+  .section table td input{font-size:16px;padding:5px 2px;min-width:0}
+  .section-total{padding:9px;font-size:13px}
+  .add{margin:8px;width:calc(100% - 16px);min-height:42px}
+  .summary{max-width:none;margin-left:0}
+  .sum{font-size:13px;padding:8px 2px}
+  .grand{font-size:17px}
+  .stock-panel{inset:0!important;border-radius:0;z-index:300}
+  .stock-head{padding:11px 10px;display:block}
+  .stock-title{font-size:17px}
+  .stock-sub{font-size:11px;margin-top:2px}
+  .stock-search{display:flex;margin:10px 0 0;gap:6px}
+  .stock-search input{width:auto!important;flex:1;min-width:0;padding:11px;font-size:16px}
+  .stock-close{padding:10px 12px}
+  .stock-table-wrap{overflow:auto;-webkit-overflow-scrolling:touch}
+  .stock-table{min-width:720px}
+  .stock-table th,.stock-table td{font-size:11px;padding:8px}
+  .stock-count{padding:8px 10px}
+}
 @media print{.stock-panel{display:none!important}}
 </style>
 </head>
@@ -137,6 +200,7 @@ td input{width:100%;border:0;outline:0;background:transparent}
 <div class="top no-print">
   <div class="brand"><span style="display:inline-flex;align-items:center;gap:10px"><img id="screenLogo" alt="Plant Olive" style="height:42px;width:auto;object-fit:contain"><span>OFFER CREATOR</span></span></div>
   <div class="actions">
+    <button class="mobile-menu-btn" onclick="toggleMobileDirectory(true)">☰ Offers</button>
     <button class="secondary" onclick="newOffer()">New</button>
     <button class="secondary" onclick="openSaved()">Open</button>
     <button class="secondary" onclick="save()">Save</button>
@@ -480,6 +544,12 @@ function selectStockFromTable(index){
     alert("First click in a Naziv field in an offer item, then open Stanje Zaliha to select an item.");
   }
 }
+function toggleMobileDirectory(open){
+  const el=document.getElementById("offerDirectory");
+  if(!el) return;
+  el.classList.toggle("mobile-open",!!open);
+}
+
 function toggleStockPanel(open){
   const panel=document.getElementById("stockPanel");
   if(!panel)return;
