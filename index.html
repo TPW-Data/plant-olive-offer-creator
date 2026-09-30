@@ -166,6 +166,117 @@ function showApp(){
   if(overlay) overlay.style.display="none";
   document.body.classList.remove("app-locked");
 }
+
+async function seedInitialOffer(){
+  if(!supabaseReady) return;
+  const {data:{user}}=await sb.auth.getUser();
+  if(!user) return;
+
+  const offerNo="2607-MC-00";
+  const {data:existing,error:findError}=await sb.from("offers")
+    .select("id,current_revision")
+    .eq("offer_no",offerNo)
+    .maybeSingle();
+
+  if(findError){
+    console.warn("Initial offer check failed:",findError.message);
+    return;
+  }
+  if(existing) return;
+
+  const snapshot={
+    id:2607000001,
+    no:"2607-MC-00",
+    date:"2026-09-30",
+    valid:"2026-10-15",
+    resp:"CAM MONIKA",
+    customer:"Ana Nekić Ćurković",
+    address:"Zadar",
+    title:"PRIJEDLOG RADOVA U UREĐENJU OKOLIŠA",
+    revision:1,
+    sections:[
+      {
+        name:"PRIPREMNI RADOVI",
+        items:[
+          {desc:"Grubo planiranje",unit:"m²",qty:60,price:1.5,discount:0,vat:25},
+          {desc:"Fino planiranje",unit:"m²",qty:60,price:1.5,discount:0,vat:25},
+          {desc:"Ravnanje tla valjkom",unit:"m²",qty:60,price:0.5,discount:0,vat:25},
+          {desc:"Sijanje trave",unit:"m²",qty:60,price:0.8,discount:0,vat:25}
+        ]
+      },
+      {
+        name:"SADNJA",
+        items:[
+          {desc:"Iskop sadne jame 100x100x100 za sadnju masline, sadnja i jednokratno zalijevanje",unit:"kom",qty:3,price:75,discount:0,vat:25},
+          {desc:"Iskop sadne jame 70x70x70 za sadnju magnolije gnojidba, sadnja i jednokratno zalijevanje",unit:"kom",qty:2,price:50,discount:0,vat:25},
+          {desc:"Iskop sadne jame 40x40x40 za sadnju, gnojidba, jednokratno zalijevanje",unit:"kom",qty:1,price:15,discount:0,vat:25},
+          {desc:"Sadnja trajnica, gnojidba, jednokratno zalijevanje",unit:"kom",qty:46,price:5,discount:0,vat:25}
+        ]
+      },
+      {
+        name:"BILJNI MATERIJAL",
+        items:[
+          {desc:"Magnolia (D2653)",unit:"kom",qty:1,price:672.38,discount:10,vat:5},
+          {desc:"Jacaranda mimosifolia (AO2018)",unit:"kom",qty:1,price:261.90,discount:10,vat:5},
+          {desc:"Olea Europaea - Tusco (VV003)",unit:"kom",qty:3,price:552.38,discount:10,vat:5},
+          {desc:"Cycas revoluta (OG1133)",unit:"kom",qty:1,price:171.43,discount:10,vat:5},
+          {desc:"Agapanthus africanus (RIV1849)",unit:"kom",qty:12,price:17.14,discount:10,vat:5},
+          {desc:"Pittosporum tobira 'Nanum' (RIV1421)",unit:"kom",qty:17,price:18.10,discount:10,vat:5},
+          {desc:"Tulbaghia violacea C25 (D0170)",unit:"kom",qty:1,price:33.33,discount:10,vat:5},
+          {desc:"Tulbaghia violacea C25 (OG1131)",unit:"kom",qty:2,price:38.10,discount:10,vat:5},
+          {desc:"Tulbaghia violacea C17 (OG1130)",unit:"kom",qty:2,price:15.24,discount:10,vat:5},
+          {desc:"Perovskia atriplicifolia (RIV2127)",unit:"kom",qty:4,price:17.14,discount:10,vat:5},
+          {desc:"Stipa tenuissima (RIV3851)",unit:"kom",qty:8,price:8.57,discount:10,vat:5}
+        ]
+      },
+      {
+        name:"OSTALI MATERIJAL I RADOVI",
+        items:[
+          {desc:"Ugradnja geotekstila",unit:"m²",qty:31,price:2,discount:0,vat:25},
+          {desc:"Ugradnja riječnog oblutka",unit:"m²",qty:31,price:10,discount:0,vat:25},
+          {desc:"Dostava i rad kamiona s kranom",unit:"paušal",qty:1,price:150,discount:0,vat:25},
+          {desc:"Usluga projektiranja i postavljanja sustava navodnjavanja (materijal uključen u cijenu)",unit:"paušal",qty:1,price:1200,discount:0,vat:25},
+          {desc:"Oblutak, rječni, granulacije 16-32 mm (Jumbo vreća 1500kg)",unit:"kom",qty:1,price:152,discount:0,vat:25},
+          {desc:"Geotekstil (200 gr.)",unit:"m²",qty:31,price:1.76,discount:0,vat:25},
+          {desc:"Brill Supstrat (70L)",unit:"kom",qty:7,price:13.60,discount:0,vat:25},
+          {desc:"Tresetni supstrat (210L)",unit:"kom",qty:4,price:25,discount:0,vat:25},
+          {desc:"Travna smjesa  (1kg)",unit:"kom",qty:2,price:10,discount:0,vat:5}
+        ]
+      }
+    ]
+  };
+
+  const {data:offerRow,error:offerError}=await sb.from("offers").insert({
+    id:snapshot.id,
+    offer_no:snapshot.no,
+    customer:snapshot.customer,
+    title:snapshot.title,
+    current_revision:1,
+    created_by:user.id,
+    updated_at:new Date().toISOString()
+  }).select().single();
+
+  if(offerError){
+    console.warn("Initial offer import failed:",offerError.message);
+    return;
+  }
+
+  const {error:revError}=await sb.from("offer_revisions").insert({
+    offer_id:offerRow.id,
+    revision_no:1,
+    snapshot:snapshot,
+    created_by:user.id
+  });
+
+  if(revError){
+    console.warn("Initial offer revision import failed:",revError.message);
+    await sb.from("offers").delete().eq("id",offerRow.id);
+    return;
+  }
+
+  console.info("Initial Plant Olive offer imported:",offerNo);
+}
+
 async function doLogin(event){
   event.preventDefault();
   const u=document.getElementById("loginUsername").value.trim().toLowerCase();
@@ -178,6 +289,7 @@ async function doLogin(event){
     const {error}=await sb.auth.signInWithPassword({email,password:p});
     if(error){err.textContent="Incorrect username or password.";return false;}
     showApp();
+    await seedInitialOffer();
     await loadOffersFromCloud();
     return false;
   }
