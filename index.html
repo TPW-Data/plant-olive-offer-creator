@@ -407,6 +407,7 @@ async function doLogin(event){
     if(error){err.textContent="Incorrect username or password.";return false;}
     showApp();
     await seedInitialOffer();
+    await restoreCloudDraft();
     await loadOffersFromCloud();
     return false;
   }
@@ -448,18 +449,79 @@ const A=i=>(+i.qty||0)*(+i.price||0)*(1-(+i.discount||0)/100);
 const esc=s=>String(s??"").replaceAll("&","&amp;").replaceAll('"',"&quot;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 const text=s=>esc(s).replaceAll("\n","<br>");
 
-// Instant local draft protection: each edit is persisted in this browser immediately.
-function persistDraft(){
+// Immediate local protection plus debounced cloud draft sync. Cloud drafts are separate
+// from numbered offer revisions, so typing never creates a revision.
+let cloudDraftTimer=null;
+let cloudDraftSavePromise=Promise.resolve();
+function persistDraft(userChange=false, scheduleCloud=true){
   if(!o || !o.id) return;
   try{
     localStorage.setItem("poDraft_"+o.id,JSON.stringify(o));
     localStorage.setItem("poLastDraftId",String(o.id));
+    if(userChange) localStorage.setItem("poDraftTime_"+o.id,String(Date.now()));
     const badge=document.getElementById("autosaveStatus");
-    if(badge) badge.textContent="✓ Draft auto-saved on this device · "+new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+    if(badge) badge.textContent=scheduleCloud && supabaseReady ? "✓ Saved on this device · syncing cloud…" : "✓ Draft saved on this device";
   }catch(err){
     const badge=document.getElementById("autosaveStatus");
-    if(badge) badge.textContent="Auto-save unavailable — please click Save";
+    if(badge) badge.textContent="Local auto-save unavailable — please click Save";
   }
+  if(!scheduleCloud) clearTimeout(cloudDraftTimer);
+  if(scheduleCloud && supabaseReady){
+    clearTimeout(cloudDraftTimer);
+    cloudDraftTimer=setTimeout(()=>{
+      // Serialize cloud writes so rapid typing cannot let an older request finish last.
+      cloudDraftSavePromise=cloudDraftSavePromise.catch(()=>{}).then(()=>saveDraftToCloud());
+    },700);
+  }
+}
+async function saveDraftToCloud(){
+  if(!supabaseReady || !o || !o.id) return;
+  const snapshot=JSON.parse(JSON.stringify(o));
+  const badge=document.getElementById("autosaveStatus");
+  try{
+    const {data:{user},error:userError}=await sb.auth.getUser();
+    if(userError || !user){if(badge) badge.textContent="✓ Saved on this device · log in to sync cloud";return;}
+    const {error}=await sb.from("offer_drafts").upsert({
+      offer_id:String(snapshot.id),
+      offer_no:snapshot.no||null,
+      customer:snapshot.customer||null,
+      snapshot,
+      created_by:user.id,
+      updated_at:new Date().toISOString()
+    },{onConflict:"offer_id,created_by"});
+    if(error){
+      if(error.code==="42P01" || /offer_drafts/i.test(error.message||"")){
+        throw new Error("Cloud draft table is not configured yet. Please run the one-time offer_drafts SQL setup in Supabase.");
+      }
+      throw error;
+    }
+    // Only show success if this is still the active offer being edited.
+    if(badge && o && String(o.id)===String(snapshot.id)) badge.textContent="✓ Draft saved to cloud · "+new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+  }catch(err){
+    console.warn("Cloud draft auto-save failed:",err.message||err);
+    if(badge) badge.textContent=(String(err.message||"").includes("one-time offer_drafts SQL setup")) ? "✓ Local draft saved · finish cloud auto-save setup in Supabase" : "✓ Saved on this device · cloud auto-save needs setup/connection";
+  }
+}
+async function restoreCloudDraft(){
+  if(!supabaseReady) return false;
+  try{
+    const {data:{user}}=await sb.auth.getUser();
+    if(!user) return false;
+    const {data:draft,error}=await sb.from("offer_drafts").select("offer_id,offer_no,customer,snapshot,updated_at")
+      .eq("created_by",user.id).order("updated_at",{ascending:false}).limit(1).maybeSingle();
+    if(error){console.warn("Could not check cloud drafts:",error.message);return false;}
+    if(!draft || !draft.snapshot || !Array.isArray(draft.snapshot.sections)) return false;
+    const localTime=Number(localStorage.getItem("poDraftTime_"+o.id)||0);
+    const cloudTime=Date.parse(draft.updated_at||"")||0;
+    const localHasContent=!!(o.customer || o.no || o.sections?.some(s=>s.name || s.items?.some(i=>i.desc || Number(i.price)||Number(i.qty)!==1)));
+    if(localHasContent && localTime>cloudTime) return false;
+    o=draft.snapshot;
+    o.id=o.id||Number(draft.offer_id)||Date.now();
+    render();
+    const badge=document.getElementById("autosaveStatus");
+    if(badge) badge.textContent="✓ Recovered unfinished offer from cloud · "+new Date(cloudTime||Date.now()).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+    return true;
+  }catch(err){console.warn("Could not restore cloud draft:",err.message||err);return false;}
 }
 function restoreDraftOrNew(){
   try{
@@ -469,9 +531,9 @@ function restoreDraftOrNew(){
       const draft=JSON.parse(raw);
       if(draft && draft.id && Array.isArray(draft.sections)){
         o=draft;
-        render();
+        render(false);
         const badge=document.getElementById("autosaveStatus");
-        if(badge) badge.textContent="✓ Recovered your last draft automatically";
+        if(badge) badge.textContent="✓ Recovered your last draft from this device";
         return;
       }
     }
@@ -479,12 +541,10 @@ function restoreDraftOrNew(){
   newOffer();
 }
 
-
-document.addEventListener("input",()=>setTimeout(persistDraft,0));
-document.addEventListener("change",()=>setTimeout(persistDraft,0));
-document.addEventListener("click",()=>setTimeout(persistDraft,0));
-window.addEventListener("beforeunload",persistDraft);
-document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")persistDraft();});
+document.addEventListener("input",()=>setTimeout(()=>persistDraft(true),0));
+document.addEventListener("change",()=>setTimeout(()=>persistDraft(true),0));
+window.addEventListener("beforeunload",()=>persistDraft(false));
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")persistDraft(false);});
 
 function localDateString(d=new Date()){
   const y=d.getFullYear();
@@ -610,7 +670,7 @@ function initStockSearch(){
   input.oninput=()=>renderStockTable(input.value);
 }
 
-function render(){
+function render(syncCloud=true){
   sync();
   let root=document.getElementById("sections");root.innerHTML="";
   o.sections.forEach((s,si)=>{
@@ -656,7 +716,7 @@ function render(){
     b.append(ad);b.append(stTemp);root.append(b);
   });
   updateSummaryOnly();
-  persistDraft();
+  persistDraft(false,syncCloud);
 }
 function updateSummaryOnly(){
   let bases={},vat=0,total=0;
@@ -697,14 +757,17 @@ async function save(){
     if(revError){alert("Offer header was saved, but revision failed: "+revError.message);return;}
     await sb.from("offers").update({current_revision:nextRevision,updated_at:new Date().toISOString()}).eq("id",o.id);
     o.revision=nextRevision;
-    persistDraft();
+    clearTimeout(cloudDraftTimer);
+    await cloudDraftSavePromise.catch(()=>{});
+    await sb.from("offer_drafts").delete().eq("offer_id",String(o.id)).eq("created_by",user.id);
+    persistDraft(false,false);
     alert("Offer saved as Revision "+nextRevision+".");
     await refreshOfferDirectory();
     return;
   }
   let a=JSON.parse(localStorage.getItem("poOffers")||"[]"),i=a.findIndex(x=>x.id===o.id);
   if(i>=0){o.revision=(o.revision||0)+1;a[i]=o}else{o.revision=1;a.push(o)}
-  localStorage.setItem("poOffers",JSON.stringify(a));persistDraft();alert("Offer saved as Revision "+o.revision+" (local browser storage). Connect Supabase for cloud storage.");
+  localStorage.setItem("poOffers",JSON.stringify(a));persistDraft(false,false);alert("Offer saved as Revision "+o.revision+" (local browser storage). Connect Supabase for cloud storage.");
   renderOfferDirectoryLocal();
 }
 async function openSaved(){
@@ -719,7 +782,7 @@ async function loadRevision(offerId, revisionNo){
   if(error){alert("Could not open Revision "+revisionNo+": "+error.message);return;}
   o=rev.snapshot;
   o.revision=rev.revision_no;
-  render();
+  render(false);
   await refreshOfferDirectory();
 }
 
@@ -727,7 +790,7 @@ async function loadLatestOffer(offerId){
   if(!supabaseReady)return;
   const {data:rev,error}=await sb.from("offer_revisions").select("snapshot,revision_no").eq("offer_id",offerId).order("revision_no",{ascending:false}).limit(1).single();
   if(error){alert("Could not open offer: "+error.message);return;}
-  o=rev.snapshot;o.revision=rev.revision_no;render();await refreshOfferDirectory();
+  o=rev.snapshot;o.revision=rev.revision_no;render(false);await refreshOfferDirectory();
 }
 
 function directoryOfferHtml(row,revisions){
@@ -867,7 +930,7 @@ if(screenLogo) screenLogo.src=LOGO_DATA;
 if(loginLogo) loginLogo.src=LOGO_DATA;
 if(supabaseReady){
   sb.auth.getSession().then(async ({data:{session}})=>{
-    if(session){showApp();await loadOffersFromCloud();}
+    if(session){showApp();await restoreCloudDraft();await loadOffersFromCloud();}
   });
 }else if(sessionStorage.getItem("plantOliveLoggedIn")==="1") showApp();
 restoreDraftOrNew();
