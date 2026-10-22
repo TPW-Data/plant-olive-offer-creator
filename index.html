@@ -62,6 +62,7 @@ td input{width:100%;border:0;outline:0;background:transparent}
 .catalogue-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .catalogue-fields label,.cat-label{display:block;font-size:12px;color:#627063;font-weight:700;margin-bottom:5px}
 .catalogue-fields input,.cat-input,.cat-search{width:100%;padding:10px 11px;border:1px solid #d6ddd5;border-radius:8px;background:#fff;min-width:0}
+.cat-select{width:100%;min-height:44px;padding:10px 11px;border:1px solid #d6ddd5;border-radius:8px;background:#fff;color:#203b29;font:inherit;min-width:0;max-width:100%}.cat-select:focus{outline:2px solid #8aa98b;outline-offset:1px}
 .cat-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .cat-btn{background:#edf2eb;color:#2d4932;border:1px solid #d7e2d4;font-weight:700}
 .cat-btn.primary{background:#294b32;color:#fff;border-color:#294b32}
@@ -1102,8 +1103,8 @@ function addCatalogueArea(save=true){
 }
 function removeCatalogueArea(index){if(!confirm("Remove this garden area and its plants?"))return;plantCatalogue.areas.splice(index,1);renderPlantCatalogue();savePlantCatalogue(false)}
 function addCataloguePlant(areaIndex,stockIndex=null){
-  if(stockIndex===null){alert("Select a plant from the current offer using the search box above.");return;}
-  chooseCatalogueStock(areaIndex,stockIndex);
+  if(stockIndex===null || stockIndex===""){alert("Select a plant from the current offer.");return;}
+  chooseCatalogueStock(areaIndex,Number(stockIndex));
 }
 function removeCataloguePlant(ai,pi){plantCatalogue.areas[ai].plants.splice(pi,1);renderPlantCatalogue();savePlantCatalogue(false)}
 function catalogueEscape(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -1125,7 +1126,7 @@ function renderPlantCatalogue(){
     <div class="cat-area-head"><input aria-label="Garden area title" value="${catalogueEscape(area.title)}" onchange="updateCatalogueAreaTitle(${ai},this.value)" placeholder="Garden area / headline"><button class="cat-btn" onclick="removeCatalogueArea(${ai})">Remove area</button></div>
     <div class="cat-area-body">
       <div class="cat-upload-row"><div class="cat-upload"><label class="cat-label">Site / garden photograph</label><input type="file" accept="image/*" onchange="cataloguePhotoInput(this,v=>{plantCatalogue.areas[${ai}].sitePhoto=v})">${area.sitePhoto?`<img class="cat-image-preview" src="${catalogueEscape(resolvePhotoSrc(area.sitePhoto,false))}" alt="Site photo">`: ''}</div>
-      <div class="cat-upload"><label class="cat-label">Add a plant from the current offer</label><div class="cat-search-wrap"><input class="cat-search" id="catSearch${ai}" placeholder="Search offer plants by Šifra or Naziv..." oninput="searchCatalogueStock(${ai},this.value)" autocomplete="off"><div class="cat-search-results" id="catResults${ai}"></div></div><p class="muted">Only plant items already included in the active offer are shown. Link this catalogue to a revision to reopen the matching catalogue later.</p></div></div>
+      <div class="cat-upload"><label class="cat-label" for="catPlantSelect${ai}">Add a plant from the current offer</label><select class="cat-select" id="catPlantSelect${ai}" onchange="addCataloguePlant(${ai},this.value);this.value=''"><option value="">${getAvailableCataloguePlants().length?"Choose a plant…":"All offer plants have been added"}</option>${getAvailableCataloguePlants().map(x=>{const idx=STOCK_DATA.findIndex(s=>String(s.sifra)===String(x.sifra));return `<option value="${idx}">${catalogueEscape(x.naziv)} · ${catalogueEscape(x.sifra)} · ${catalogueEscape(x.jm)} · ${catalogueEscape(x.offerSection)}</option>`}).join("")}</select><p class="muted">Choose from plants included in the active offer. A plant disappears from every selection list after it has been added to this catalogue, and becomes available again if removed.</p></div></div>
       ${area.plants.length?`<div class="cat-plants">${area.plants.map((plant,pi)=>`<div class="cat-plant">
         <button class="remove" onclick="removeCataloguePlant(${ai},${pi})" title="Remove plant">✕</button>
         ${plant.photo?`<img src="${catalogueEscape(resolvePhotoSrc(plant.photo,false))}" alt="${catalogueEscape(plant.name)}">`:`<div class="cat-empty" style="height:170px;display:grid;place-items:center;padding:10px">Plant photo not added</div>`}
@@ -1153,11 +1154,16 @@ function getOfferPlantChoices(){
   }));return choices;
 }
 function getPlantImageForCode(code){const img=plantImages.find(img=>(img.codes||[]).includes(String(code)));return img?"idb:"+(img.assetId||img.id):"";}
+function getAvailableCataloguePlants(){
+  const alreadyAdded=new Set((plantCatalogue.areas||[]).flatMap(area=>(area.plants||[]).map(p=>String(p.code||""))).filter(Boolean));
+  return getOfferPlantChoices().filter(x=>!alreadyAdded.has(String(x.sifra)));
+}
 function searchCatalogueStock(ai,term){
+  // Kept for compatibility with older open drafts; the current interface uses a dropdown.
   const box=document.getElementById("catResults"+ai);if(!box)return;
   const q=String(term||"").trim();if(!q){box.classList.remove("open");box.innerHTML="";return;}
-  const choices=getOfferPlantChoices().filter(x=>stockMatch(x,q)).slice(0,12);
-  box.innerHTML=choices.map(x=>`<div class="cat-search-option" onclick="chooseCatalogueStock(${ai},${STOCK_DATA.findIndex(s=>String(s.sifra)===String(x.sifra))})"><strong>${catalogueEscape(x.naziv)}</strong><span>${catalogueEscape(x.sifra)} · ${catalogueEscape(x.jm)} · from ${catalogueEscape(x.offerSection)}</span></div>`).join("")||'<div class="cat-search-option">No matching plants in this offer. Add the plant to the offer first.</div>';
+  const choices=getAvailableCataloguePlants().filter(x=>stockMatch(x,q)).slice(0,12);
+  box.innerHTML=choices.map(x=>`<div class="cat-search-option"><strong>${catalogueEscape(x.naziv)}</strong><span>${catalogueEscape(x.sifra)} · ${catalogueEscape(x.jm)} · ${catalogueEscape(x.offerSection)}</span></div>`).join("")||'<div class="cat-search-option">No matching plants available.</div>';
   box.classList.add("open");
 }
 function chooseCatalogueStock(ai,stockIndex){
@@ -1165,7 +1171,7 @@ function chooseCatalogueStock(ai,stockIndex){
   const available=getOfferPlantChoices().find(x=>String(x.sifra)===String(item.sifra));
   if(!available){alert("This item is not included in the current offer. Add it to the offer first.");return;}
   const area=plantCatalogue.areas[ai];if(!area)return;
-  if(area.plants.some(p=>String(p.code)===String(item.sifra))){alert("This plant is already in this garden area.");return;}
+  if((plantCatalogue.areas||[]).some(a=>(a.plants||[]).some(p=>String(p.code)===String(item.sifra)))){alert("This plant is already included in this catalogue. It has been removed from the selection lists.");renderPlantCatalogue();return;}
   area.plants.push({id:Date.now()+Math.random(),name:item.naziv,code:String(item.sifra),description:"",photo:getPlantImageForCode(item.sifra)});
   renderPlantCatalogue();savePlantCatalogue(false);
 }
