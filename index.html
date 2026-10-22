@@ -376,7 +376,7 @@ td input{width:100%;border:0;outline:0;background:transparent}
     <h1 class="catalogue-heading">Images · Plant Olive</h1>
     <div class="catalogue-sub">Upload plant photos once and link each image to one or more Stanje Zaliha items using Šifra. The code-based connection remains stable when catalogue rows are reordered or refreshed.</div>
     <div class="cat-toolbar"><button class="cat-btn" onclick="showCatalogueTab()">Plant Catalogue</button><button class="cat-btn" onclick="hideImagesTab()">Back to Offer</button></div>
-    <div class="cat-upload" style="margin-top:14px"><label class="cat-label" for="imageLibraryUpload">Upload plant image</label><input id="imageLibraryUpload" type="file" accept="image/*" onchange="uploadLibraryImage(this)"><p class="muted">Images are resized for web use. Each image can be connected to multiple Šifra codes.</p></div>
+    <div class="cat-upload" style="margin-top:14px"><label class="cat-label" for="imageLibraryUpload">Upload plant image</label><input id="imageLibraryUpload" type="file" accept="image/*" onchange="uploadLibraryImage(this)"><p class="muted">Original full-resolution images are kept for catalogue printing. Smaller previews are used on screen. Large photos are supported; available browser storage still depends on your device.</p></div>
     <div class="catalogue-fields" style="margin-top:14px"><div><label for="imageLibrarySearch">Search images</label><input id="imageLibrarySearch" class="cat-input" placeholder="Image name or Šifra..." oninput="renderImageLibrary()"></div><div><label for="imageStockSearch">Find Stanje Zaliha item</label><input id="imageStockSearch" class="cat-input" placeholder="Search by Šifra or Naziv..." oninput="renderImageStockMatches()"></div><div><label>Selected image</label><div id="selectedImageStatus" class="cat-input" style="min-height:39px">Select an image below to link it to items.</div></div></div>
     <div id="imageStockMatches" class="image-stock-matches"></div>
     <div id="imageLibraryGrid" class="image-library-grid"></div>
@@ -1107,11 +1107,11 @@ function addCataloguePlant(areaIndex,stockIndex=null){
 }
 function removeCataloguePlant(ai,pi){plantCatalogue.areas[ai].plants.splice(pi,1);renderPlantCatalogue();savePlantCatalogue(false)}
 function catalogueEscape(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function cataloguePhotoInput(fileInput, callback){
+async function cataloguePhotoInput(fileInput, callback){
   const file=fileInput.files?.[0];if(!file)return;
-  if(!file.type.startsWith("image/")){alert("Please choose an image file.");return;}
-  if(file.size>8*1024*1024){alert("Please choose an image smaller than 8 MB.");fileInput.value="";return;}
-  const reader=new FileReader();reader.onload=()=>{callback(String(reader.result||""));renderPlantCatalogue();savePlantCatalogue(false)};reader.readAsDataURL(file);
+  if(!file.type.startsWith("image/")){alert("Please choose an image file.");fileInput.value="";return;}
+  try{const id=await storeImageAsset(file);callback("idb:"+id);renderPlantCatalogue();savePlantCatalogue(false);fileInput.value="";}
+  catch(err){console.error("Image upload failed",err);alert("The image could not be stored. Your browser may be out of storage space. Please try another image or free some device storage.");fileInput.value="";}
 }
 function renderPlantCatalogue(){
   (plantCatalogue.areas||[]).forEach(area=>(area.plants||[]).forEach(plant=>{if(!plant.photo&&plant.code)plant.photo=getPlantImageForCode(plant.code)}));
@@ -1124,11 +1124,11 @@ function renderPlantCatalogue(){
   root.innerHTML=plantCatalogue.areas.map((area,ai)=>`<section class="cat-area">
     <div class="cat-area-head"><input aria-label="Garden area title" value="${catalogueEscape(area.title)}" onchange="updateCatalogueAreaTitle(${ai},this.value)" placeholder="Garden area / headline"><button class="cat-btn" onclick="removeCatalogueArea(${ai})">Remove area</button></div>
     <div class="cat-area-body">
-      <div class="cat-upload-row"><div class="cat-upload"><label class="cat-label">Site / garden photograph</label><input type="file" accept="image/*" onchange="cataloguePhotoInput(this,v=>{plantCatalogue.areas[${ai}].sitePhoto=v})">${area.sitePhoto?`<img class="cat-image-preview" src="${area.sitePhoto}" alt="Site photo">`:''}</div>
+      <div class="cat-upload-row"><div class="cat-upload"><label class="cat-label">Site / garden photograph</label><input type="file" accept="image/*" onchange="cataloguePhotoInput(this,v=>{plantCatalogue.areas[${ai}].sitePhoto=v})">${area.sitePhoto?`<img class="cat-image-preview" src="${catalogueEscape(resolvePhotoSrc(area.sitePhoto,false))}" alt="Site photo">`: ''}</div>
       <div class="cat-upload"><label class="cat-label">Add a plant from the current offer</label><div class="cat-search-wrap"><input class="cat-search" id="catSearch${ai}" placeholder="Search offer plants by Šifra or Naziv..." oninput="searchCatalogueStock(${ai},this.value)" autocomplete="off"><div class="cat-search-results" id="catResults${ai}"></div></div><p class="muted">Only plant items already included in the active offer are shown. Link this catalogue to a revision to reopen the matching catalogue later.</p></div></div>
       ${area.plants.length?`<div class="cat-plants">${area.plants.map((plant,pi)=>`<div class="cat-plant">
         <button class="remove" onclick="removeCataloguePlant(${ai},${pi})" title="Remove plant">✕</button>
-        ${plant.photo?`<img src="${plant.photo}" alt="${catalogueEscape(plant.name)}">`:`<div class="cat-empty" style="height:170px;display:grid;place-items:center;padding:10px">Plant photo not added</div>`}
+        ${plant.photo?`<img src="${catalogueEscape(resolvePhotoSrc(plant.photo,false))}" alt="${catalogueEscape(plant.name)}">`:`<div class="cat-empty" style="height:170px;display:grid;place-items:center;padding:10px">Plant photo not added</div>`}
         <label class="cat-label">Plant photo</label><input type="file" accept="image/*" onchange="cataloguePhotoInput(this,v=>{plantCatalogue.areas[${ai}].plants[${pi}].photo=v})">
         <input type="text" value="${catalogueEscape(plant.name)}" aria-label="Plant name" placeholder="Plant name" oninput="updateCataloguePlant(${ai},${pi},'name',this.value)">
         <input type="text" value="${catalogueEscape(plant.description||'')}" aria-label="Description" placeholder="Optional description" oninput="updateCataloguePlant(${ai},${pi},'description',this.value)">
@@ -1152,7 +1152,7 @@ function getOfferPlantChoices(){
     choices.push({...stock,offerSection:sec.name||("Headline "+(si+1)),offerItemDesc:desc,offerSectionIndex:si,offerItemIndex:ii});
   }));return choices;
 }
-function getPlantImageForCode(code){return plantImages.find(img=>(img.codes||[]).includes(String(code)))?.src||"";}
+function getPlantImageForCode(code){const img=plantImages.find(img=>(img.codes||[]).includes(String(code)));return img?"idb:"+(img.assetId||img.id):"";}
 function searchCatalogueStock(ai,term){
   const box=document.getElementById("catResults"+ai);if(!box)return;
   const q=String(term||"").trim();if(!q){box.classList.remove("open");box.innerHTML="";return;}
@@ -1214,20 +1214,41 @@ function loadCatalogueForOfferRevision(){
   catch(e){console.warn("Could not load linked catalogue",e)}
   renderPlantCatalogue();refreshSavedCatalogueOptions();updateCatalogueLinkStatus();
 }
-function loadPlantImages(){try{const data=JSON.parse(localStorage.getItem(PLANT_IMAGES_KEY)||"[]");plantImages=Array.isArray(data)?data:[];}catch(e){plantImages=[]}}
-function savePlantImages(){try{localStorage.setItem(PLANT_IMAGES_KEY,JSON.stringify(plantImages));return true;}catch(e){alert("Image library is too large for this browser storage. Please use smaller images or fewer images.");return false;}}
-function compressImageFile(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=reject;reader.onload=()=>{const im=new Image();im.onerror=reject;im.onload=()=>{const scale=Math.min(1,1400/Math.max(im.width,im.height));const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(im.width*scale));canvas.height=Math.max(1,Math.round(im.height*scale));canvas.getContext("2d").drawImage(im,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL("image/jpeg",0.82));};im.src=String(reader.result);};reader.readAsDataURL(file);});}
-async function uploadLibraryImage(input){const file=input.files?.[0];if(!file)return;if(!file.type.startsWith("image/")){alert("Please select an image file.");return;}try{const src=await compressImageFile(file);const img={id:"img_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),name:file.name.replace(/\.[^.]+$/, ""),src,codes:[]};plantImages.unshift(img);if(!savePlantImages()){plantImages.shift();return;}selectedLibraryImageId=img.id;input.value="";renderImageLibrary();renderImageStockMatches();}catch(e){alert("Could not read this image.");}}
+// Full-resolution image assets are stored in IndexedDB, not localStorage. This avoids the small localStorage quota and preserves originals for print.
+const IMAGE_DB_NAME="plantOliveImageAssets_v2", IMAGE_DB_STORE="assets";
+let imageDbPromise=null, imageAssetUrls={}, imageThumbUrls={};
+function openImageDb(){if(imageDbPromise)return imageDbPromise;imageDbPromise=new Promise((resolve,reject)=>{const req=indexedDB.open(IMAGE_DB_NAME,1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(IMAGE_DB_STORE))db.createObjectStore(IMAGE_DB_STORE,{keyPath:"id"});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error("IndexedDB unavailable"));});return imageDbPromise;}
+function idbRequest(req){return new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error("Image storage request failed"));});}
+async function storeImageAsset(file){const id="asset_"+Date.now()+"_"+Math.random().toString(36).slice(2,9);const thumb=await makeImageThumbnail(file);const db=await openImageDb();await idbRequest(db.transaction(IMAGE_DB_STORE,"readwrite").objectStore(IMAGE_DB_STORE).put({id,original:file,thumb,name:file.name||"image",type:file.type||"image/jpeg",createdAt:Date.now()}));setAssetUrls(id,file,thumb);return id;}
+function setAssetUrls(id,original,thumb){if(imageAssetUrls[id])URL.revokeObjectURL(imageAssetUrls[id]);if(imageThumbUrls[id])URL.revokeObjectURL(imageThumbUrls[id]);imageAssetUrls[id]=URL.createObjectURL(original);imageThumbUrls[id]=URL.createObjectURL(thumb||original);}
+async function makeImageThumbnail(file){return new Promise((resolve)=>{const url=URL.createObjectURL(file);const im=new Image();im.onload=()=>{try{const scale=Math.min(1,1200/Math.max(im.naturalWidth,im.naturalHeight));const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(im.naturalWidth*scale));canvas.height=Math.max(1,Math.round(im.naturalHeight*scale));canvas.getContext("2d").drawImage(im,0,0,canvas.width,canvas.height);canvas.toBlob(blob=>{URL.revokeObjectURL(url);resolve(blob||file);},"image/jpeg",0.82);}catch(e){URL.revokeObjectURL(url);resolve(file);}};im.onerror=()=>{URL.revokeObjectURL(url);resolve(file);};im.src=url;});}
+function resolvePhotoSrc(ref,highQuality=false){if(!ref)return"";const s=String(ref);if(s.startsWith("idb:")){const id=s.slice(4);return (highQuality?imageAssetUrls[id]:imageThumbUrls[id])||imageAssetUrls[id]||imageThumbUrls[id]||"";}return s;}
+async function getAsset(id){const db=await openImageDb();return await idbRequest(db.transaction(IMAGE_DB_STORE,"readonly").objectStore(IMAGE_DB_STORE).get(id));}
+async function deleteAsset(id){try{const db=await openImageDb();await idbRequest(db.transaction(IMAGE_DB_STORE,"readwrite").objectStore(IMAGE_DB_STORE).delete(id));if(imageAssetUrls[id])URL.revokeObjectURL(imageAssetUrls[id]);if(imageThumbUrls[id])URL.revokeObjectURL(imageThumbUrls[id]);delete imageAssetUrls[id];delete imageThumbUrls[id];}catch(e){console.warn("Could not delete image asset",e)}}
+function dataUrlToBlob(dataUrl){const parts=String(dataUrl).split(",");const mime=(parts[0].match(/data:([^;]+)/)||[])[1]||"image/jpeg";const binary=atob(parts[1]||"");const bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return new Blob([bytes],{type:mime});}
+async function migratePhotoRefs(value){if(!value||typeof value!=="object")return value;if(Array.isArray(value)){for(let i=0;i<value.length;i++)value[i]=await migratePhotoRefs(value[i]);return value;}for(const key of Object.keys(value)){if((key==="photo"||key==="sitePhoto")&&typeof value[key]==="string"&&value[key].startsWith("data:image/")){try{const blob=dataUrlToBlob(value[key]);const id=await storeImageAsset(new File([blob],"migrated-photo.jpg",{type:blob.type}));value[key]="idb:"+id;}catch(e){console.warn("Photo migration skipped",e);}}else if(value[key]&&typeof value[key]==="object")value[key]=await migratePhotoRefs(value[key]);}return value;}
+async function loadPlantImages(){try{const db=await openImageDb();const assets=await idbRequest(db.transaction(IMAGE_DB_STORE,"readonly").objectStore(IMAGE_DB_STORE).getAll());assets.forEach(a=>setAssetUrls(a.id,a.original,a.thumb||a.original));const data=JSON.parse(localStorage.getItem(PLANT_IMAGES_KEY)||"[]");plantImages=Array.isArray(data)?data:[];
+  // Migrate older library images that were embedded as large data URLs in localStorage.
+  let changed=false;for(const img of plantImages){if(img.src&&String(img.src).startsWith("data:image/")){const blob=dataUrlToBlob(img.src);const id=await storeImageAsset(new File([blob],(img.name||"plant")+".jpg",{type:blob.type}));if(img.id!==id){img.assetId=id;}delete img.src;changed=true;}else if(!img.assetId&&img.id&&imageAssetUrls[img.id]){img.assetId=img.id;changed=true;}}
+  // Existing library records keep their stable image id; assetId points to the stored full-resolution file.
+  if(changed)localStorage.setItem(PLANT_IMAGES_KEY,JSON.stringify(plantImages));
+  // Restore any asset refs used by saved catalogues, including revision-linked catalogues.
+  const keys=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k===CATALOGUE_STORAGE_KEY||k===CATALOGUE_LIBRARY_KEY||k.startsWith("plantOliveCatalogueLink_v1_")))keys.push(k);}for(const key of keys){try{const raw=localStorage.getItem(key);if(!raw)continue;let val=JSON.parse(raw);val=await migratePhotoRefs(val);localStorage.setItem(key,JSON.stringify(val));}catch(e){console.warn("Could not migrate saved catalogue photos",key,e)}}
+  // Ensure legacy library asset ids are mapped after migration.
+  for(const img of plantImages){if(img.assetId&&!imageAssetUrls[img.assetId]){const asset=await getAsset(img.assetId);if(asset)setAssetUrls(img.assetId,asset.original,asset.thumb||asset.original);}}
+}catch(e){console.error("Image storage initialization failed",e);try{const data=JSON.parse(localStorage.getItem(PLANT_IMAGES_KEY)||"[]");plantImages=Array.isArray(data)?data:[]}catch(_){plantImages=[]}}}
+function savePlantImages(){try{localStorage.setItem(PLANT_IMAGES_KEY,JSON.stringify(plantImages));return true;}catch(e){alert("Could not save image links. Please free some browser storage and try again.");return false;}}
+async function uploadLibraryImage(input){const file=input.files?.[0];if(!file)return;if(!file.type.startsWith("image/")){alert("Please select an image file.");return;}try{const assetId=await storeImageAsset(file);const img={id:"img_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),assetId,name:file.name.replace(/\.[^.]+$/, ""),codes:[]};plantImages.unshift(img);if(!savePlantImages()){plantImages.shift();await deleteAsset(assetId);return;}selectedLibraryImageId=img.id;input.value="";renderImageLibrary();renderImageStockMatches();}catch(e){console.error(e);alert("Could not store this image. Your browser/device may be out of storage space. Try freeing device storage and upload again.");}}
 function renderImageLibrary(){
  const root=document.getElementById("imageLibraryGrid");if(!root)return;
  const q=String(document.getElementById("imageLibrarySearch")?.value||"").trim().toLocaleLowerCase("hr-HR");
  const rows=plantImages.filter(img=>!q||String(img.name).toLocaleLowerCase("hr-HR").includes(q)||(img.codes||[]).some(code=>String(code).toLocaleLowerCase("hr-HR").includes(q)||String(STOCK_DATA.find(x=>String(x.sifra)===String(code))?.naziv||"").toLocaleLowerCase("hr-HR").includes(q)));
- root.innerHTML=rows.map(img=>`<div class="image-library-card ${img.id===selectedLibraryImageId?"selected":""}" onclick="selectLibraryImage('${img.id}')"><img src="${img.src}" alt="${catalogueEscape(img.name)}"><input type="text" value="${catalogueEscape(img.name)}" onclick="event.stopPropagation()" onchange="renameLibraryImage('${img.id}',this.value)" aria-label="Image name"><div class="muted">Linked Šifra: ${(img.codes||[]).map(catalogueEscape).join(", ")||"None yet"}</div><button class="cat-btn" onclick="event.stopPropagation();deleteLibraryImage('${img.id}')">Delete image</button></div>`).join("")||'<div class="cat-empty">No images yet. Upload the first plant photo above.</div>';
+ root.innerHTML=rows.map(img=>`<div class="image-library-card ${img.id===selectedLibraryImageId?"selected":""}" onclick="selectLibraryImage('${img.id}')"><img src="${catalogueEscape(resolvePhotoSrc("idb:"+(img.assetId||img.id),false))}" alt="${catalogueEscape(img.name)}"><input type="text" value="${catalogueEscape(img.name)}" onclick="event.stopPropagation()" onchange="renameLibraryImage('${img.id}',this.value)" aria-label="Image name"><div class="muted">Linked Šifra: ${(img.codes||[]).map(catalogueEscape).join(", ")||"None yet"}</div><button class="cat-btn" onclick="event.stopPropagation();deleteLibraryImage('${img.id}')">Delete image</button></div>`).join("")||'<div class="cat-empty">No images yet. Upload the first plant photo above.</div>';
  const status=document.getElementById("selectedImageStatus");if(status){const img=plantImages.find(x=>x.id===selectedLibraryImageId);status.textContent=img?`Selected: ${img.name} · ${(img.codes||[]).length} linked item(s)`:"Select an image below to link it to items.";}
 }
 function selectLibraryImage(id){selectedLibraryImageId=id;renderImageLibrary();renderImageStockMatches();}
 function renameLibraryImage(id,name){const img=plantImages.find(x=>x.id===id);if(img){img.name=name;savePlantImages();renderImageLibrary();}}
-function deleteLibraryImage(id){if(!confirm("Delete this image and its item links?"))return;plantImages=plantImages.filter(x=>x.id!==id);if(selectedLibraryImageId===id)selectedLibraryImageId=null;savePlantImages();renderImageLibrary();renderImageStockMatches();}
+async function deleteLibraryImage(id){if(!confirm("Delete this image and its item links?"))return;const img=plantImages.find(x=>x.id===id);plantImages=plantImages.filter(x=>x.id!==id);if(selectedLibraryImageId===id)selectedLibraryImageId=null;savePlantImages();if(img?.assetId)await deleteAsset(img.assetId);renderImageLibrary();renderImageStockMatches();}
 function renderImageStockMatches(){
  const root=document.getElementById("imageStockMatches");if(!root)return;
  const img=plantImages.find(x=>x.id===selectedLibraryImageId);const q=String(document.getElementById("imageStockSearch")?.value||"").trim();
@@ -1237,32 +1258,33 @@ function renderImageStockMatches(){
 }
 function toggleImageStockCode(imageId,code,checked){const img=plantImages.find(x=>x.id===imageId);if(!img)return;img.codes=img.codes||[];if(checked&&!img.codes.includes(String(code)))img.codes.push(String(code));if(!checked)img.codes=img.codes.filter(x=>String(x)!==String(code));savePlantImages();renderImageLibrary();}
 function loadPlantCatalogue(){
-  loadPlantImages();
   try{const raw=localStorage.getItem(CATALOGUE_STORAGE_KEY);if(raw){const data=JSON.parse(raw);if(data&&Array.isArray(data.areas))plantCatalogue=data;}}catch(e){console.warn("Could not load catalogue",e)}
   if(!plantCatalogue.areas.length)plantCatalogue.areas.push({id:Date.now(),title:"Nova vrtna površina",sitePhoto:"",plants:[]});
   renderPlantCatalogue();refreshSavedCatalogueOptions();
 }
-function createPlantCataloguePDF(){
+async function createPlantCataloguePDF(){
   savePlantCatalogue(false);
   const title=plantCatalogue.title||"Katalog biljaka", client=plantCatalogue.client||"";
   const header=(cover=false)=>`<div class="cat-print-top"><div><div class="cat-print-kicker">PLANT OLIVE · ${cover?"BOTANIČKA PREZENTACIJA":"KATALOG BILJAKA"}</div>${cover?`<div class="cat-print-title">${catalogueEscape(title)}</div>`:""}${client?`<div style="font-size:10pt;margin-top:5px">${catalogueEscape(client)}</div>`:""}</div><img class="cat-print-logo" src="${LOGO_DATA}" alt="Plant Olive"></div>`;
   const footer=`<div class="cat-print-footer"><span>www.plant-olive.com</span><span>info@plant-olive.com</span><span>+385 99 555 2244</span></div>`;
   let pages=[];
   const coverArea=plantCatalogue.areas.find(a=>a.sitePhoto);
-  pages.push(`<div class="cat-print-page cat-print-cover">${header(true)}${coverArea?`<img class="cat-print-cover-photo" src="${coverArea.sitePhoto}">`:''}<div style="font-size:11pt;color:#5c6956;margin-top:8px">${catalogueEscape(plantCatalogue.date||"")}</div>${footer}</div>`);
+  pages.push(`<div class="cat-print-page cat-print-cover">${header(true)}${coverArea?`<img class="cat-print-cover-photo" src="${catalogueEscape(resolvePhotoSrc(coverArea.sitePhoto,true))}">`:''}<div style="font-size:11pt;color:#5c6956;margin-top:8px">${catalogueEscape(plantCatalogue.date||"")}</div>${footer}</div>`);
   plantCatalogue.areas.forEach(area=>{
     const plants=area.plants||[];
-    if(!plants.length){pages.push(`<div class="cat-print-page">${header()}<div class="cat-print-area">${catalogueEscape(area.title||"")}</div>${area.sitePhoto?`<img class="cat-print-site" src="${area.sitePhoto}">`:''}${footer}</div>`);return;}
-    for(let i=0;i<plants.length;i+=4){const chunk=plants.slice(i,i+4);pages.push(`<div class="cat-print-page">${header()}<div class="cat-print-area">${catalogueEscape(area.title||"")}</div>${i===0&&area.sitePhoto?`<img class="cat-print-site" src="${area.sitePhoto}">`:''}<div class="cat-print-plant-grid">${chunk.map(pl=>`<div class="cat-print-plant">${pl.photo?`<img src="${pl.photo}" alt="${catalogueEscape(pl.name)}">`:`<div style="height:65mm;background:#f0f2ed;display:grid;place-items:center;color:#8a9383;font-size:10pt">Plant Olive</div>`}<div class="cat-print-plant-name">${catalogueEscape(pl.name||"")}</div>${pl.description?`<div class="cat-print-desc">${catalogueEscape(pl.description)}</div>`:""}</div>`).join("")}</div>${footer}</div>`);}
+    if(!plants.length){pages.push(`<div class="cat-print-page">${header()}<div class="cat-print-area">${catalogueEscape(area.title||"")}</div>${area.sitePhoto?`<img class="cat-print-site" src="${catalogueEscape(resolvePhotoSrc(area.sitePhoto,true))}">`:''}${footer}</div>`);return;}
+    for(let i=0;i<plants.length;i+=4){const chunk=plants.slice(i,i+4);pages.push(`<div class="cat-print-page">${header()}<div class="cat-print-area">${catalogueEscape(area.title||"")}</div>${i===0&&area.sitePhoto?`<img class="cat-print-site" src="${catalogueEscape(resolvePhotoSrc(area.sitePhoto,true))}">`:''}<div class="cat-print-plant-grid">${chunk.map(pl=>`<div class="cat-print-plant">${pl.photo?`<img src="${catalogueEscape(resolvePhotoSrc(pl.photo,true))}" alt="${catalogueEscape(pl.name)}">`:`<div style="height:65mm;background:#f0f2ed;display:grid;place-items:center;color:#8a9383;font-size:10pt">Plant Olive</div>`}<div class="cat-print-plant-name">${catalogueEscape(pl.name||"")}</div>${pl.description?`<div class="cat-print-desc">${catalogueEscape(pl.description)}</div>`:""}</div>`).join("")}</div>${footer}</div>`);}
   });
-  const thanksImg=plantCatalogue.areas.flatMap(a=>a.plants||[]).find(p=>p.photo)?.photo||coverArea?.sitePhoto||"";
+  const thanksImgRef=plantCatalogue.areas.flatMap(a=>a.plants||[]).find(p=>p.photo)?.photo||coverArea?.sitePhoto||"";const thanksImg=resolvePhotoSrc(thanksImgRef,true);
   pages.push(`<div class="cat-print-page cat-print-cover">${header(true)}${thanksImg?`<img class="cat-print-cover-photo" src="${thanksImg}">`:''}<div class="cat-print-title" style="font-size:42pt">Hvala na pažnji!</div><div style="font-size:13pt;margin-top:8px">Plant Olive</div>${footer}</div>`);
   document.getElementById("cataloguePrintReport").innerHTML=pages.join("");
   document.body.classList.add("catalogue-print-active");
-  setTimeout(()=>window.print(),150);
+  const printImages=[...document.querySelectorAll("#cataloguePrintReport img")];
+  await Promise.all(printImages.map(img=>img.decode?img.decode().catch(()=>{}):new Promise(resolve=>{if(img.complete)return resolve();img.onload=resolve;img.onerror=resolve;})));
+  setTimeout(()=>window.print(),100);
 }
 window.addEventListener("afterprint",()=>document.body.classList.remove("catalogue-print-active"));
-try{loadPlantCatalogue();loadPlantImages()}catch(e){console.warn("Catalogue initialisation failed",e)}
+try{(async()=>{await loadPlantImages();await loadPlantCatalogue()})().catch(e=>console.warn("Catalogue initialisation failed",e))}catch(e){console.warn("Catalogue initialisation failed",e)}
 
 const screenLogo=document.getElementById("screenLogo");
 const loginLogo=document.getElementById("loginLogo");
