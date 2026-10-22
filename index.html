@@ -1238,7 +1238,21 @@ async function loadPlantImages(){try{const db=await openImageDb();const assets=a
   for(const img of plantImages){if(img.assetId&&!imageAssetUrls[img.assetId]){const asset=await getAsset(img.assetId);if(asset)setAssetUrls(img.assetId,asset.original,asset.thumb||asset.original);}}
 }catch(e){console.error("Image storage initialization failed",e);try{const data=JSON.parse(localStorage.getItem(PLANT_IMAGES_KEY)||"[]");plantImages=Array.isArray(data)?data:[]}catch(_){plantImages=[]}}}
 function savePlantImages(){try{localStorage.setItem(PLANT_IMAGES_KEY,JSON.stringify(plantImages));return true;}catch(e){alert("Could not save image links. Please free some browser storage and try again.");return false;}}
-async function uploadLibraryImage(input){const file=input.files?.[0];if(!file)return;if(!file.type.startsWith("image/")){alert("Please select an image file.");return;}try{const assetId=await storeImageAsset(file);const img={id:"img_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),assetId,name:file.name.replace(/\.[^.]+$/, ""),codes:[]};plantImages.unshift(img);if(!savePlantImages()){plantImages.shift();await deleteAsset(assetId);return;}selectedLibraryImageId=img.id;input.value="";renderImageLibrary();renderImageStockMatches();}catch(e){console.error(e);alert("Could not store this image. Your browser/device may be out of storage space. Try freeing device storage and upload again.");}}
+async function normalizeUploadedImage(file){
+  // Some image downloads have a .jpg filename even though the actual bytes are WebP.
+  // Detect the real format from its signature so previews and PDF output decode reliably.
+  const bytes=new Uint8Array(await file.slice(0,16).arrayBuffer());let mime=file.type||"application/octet-stream",ext="";
+  if(bytes[0]===0x52&&bytes[1]===0x49&&bytes[2]===0x46&&bytes[3]===0x46&&bytes[8]===0x57&&bytes[9]===0x45&&bytes[10]===0x42&&bytes[11]===0x50){mime="image/webp";ext="webp";}
+  else if(bytes[0]===0xFF&&bytes[1]===0xD8&&bytes[2]===0xFF){mime="image/jpeg";ext="jpg";}
+  else if(bytes[0]===0x89&&bytes[1]===0x50&&bytes[2]===0x4E&&bytes[3]===0x47){mime="image/png";ext="png";}
+  else if(bytes[0]===0x47&&bytes[1]===0x49&&bytes[2]===0x46){mime="image/gif";ext="gif";}
+  else if(bytes[4]===0x66&&bytes[5]===0x74&&bytes[6]===0x79&&bytes[7]===0x70){mime="image/avif";ext="avif";}
+  else if(!mime.startsWith("image/")){throw new Error("This file does not appear to be a supported image. Please use JPG, PNG, WebP or AVIF.");}
+  if(!ext){ext=mime.includes("png")?"png":mime.includes("webp")?"webp":mime.includes("avif")?"avif":mime.includes("gif")?"gif":"jpg";}
+  const base=String(file.name||"plant-image").replace(/\.[^.]+$/,""),name=base+"."+ext;
+  return new File([file],name,{type:mime,lastModified:file.lastModified||Date.now()});
+}
+async function uploadLibraryImage(input){let file=input.files?.[0];if(!file)return;try{file=await normalizeUploadedImage(file);const assetId=await storeImageAsset(file);const img={id:"img_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),assetId,name:file.name.replace(/\.[^.]+$/, ""),codes:[]};plantImages.unshift(img);if(!savePlantImages()){plantImages.shift();await deleteAsset(assetId);return;}selectedLibraryImageId=img.id;input.value="";renderImageLibrary();renderImageStockMatches();}catch(e){console.error("Plant image upload failed:",e);const msg=String(e?.message||"");alert(msg.includes("supported image")?msg:"The image could not be saved. This can happen if browser storage is full or blocked. Try refreshing the app and uploading again; your original photo is not changed.");}}
 function renderImageLibrary(){
  const root=document.getElementById("imageLibraryGrid");if(!root)return;
  const q=String(document.getElementById("imageLibrarySearch")?.value||"").trim().toLocaleLowerCase("hr-HR");
