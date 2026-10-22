@@ -41,6 +41,18 @@ td input{width:100%;border:0;outline:0;background:transparent}
 .print-report{display:none}
 
 
+
+.image-library-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:16px}
+.image-library-card{border:1px solid #dfe5dc;border-radius:12px;padding:10px;cursor:pointer;min-width:0;background:#fff}
+.image-library-card.selected{outline:3px solid #6f8c60;background:#f5f8f2}
+.image-library-card img{width:100%;height:170px;object-fit:cover;border-radius:8px;background:#f2f3ef}
+.image-library-card input[type=text]{width:100%;margin:8px 0;padding:8px;border:1px solid #d7dfd4;border-radius:7px}
+.image-stock-matches{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:12px}
+.image-stock-option{border:1px solid #dfe5dc;border-radius:8px;padding:9px;display:flex;gap:8px;align-items:flex-start;font-size:12px;background:#fff}
+.image-stock-option span{display:block;color:#748075;margin-top:3px}
+@media(max-width:800px){.image-library-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.image-stock-matches{grid-template-columns:1fr}}
+@media(max-width:480px){.image-library-grid{grid-template-columns:1fr}}
+
 /* PLANT CATALOGUE EDITOR */
 .catalogue-app{display:none;max-width:1450px;margin:20px auto;padding:0 16px}
 .catalogue-app.active{display:block}
@@ -273,6 +285,7 @@ td input{width:100%;border:0;outline:0;background:transparent}
     <button class="secondary" onclick="save()">Save</button>
     <button class="secondary" onclick="toggleStockPanel(true)">Stanje Zaliha</button>
     <button class="secondary" id="catalogueTabBtn" onclick="showCatalogueTab()">Plant Catalogue</button>
+    <button class="secondary" id="imagesTabBtn" onclick="showImagesTab()">Images</button>
     <button class="primary" onclick="createPDF()">CREATE PDF</button>
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
@@ -334,7 +347,7 @@ td input{width:100%;border:0;outline:0;background:transparent}
 <div id="catalogueApp" class="catalogue-app no-print">
   <div class="catalogue-card">
     <h1 class="catalogue-heading">Katalog biljaka</h1>
-    <div class="catalogue-sub">Create a visual, client-specific Plant Olive catalogue. Add garden areas, site photographs and plants from Stanje Zaliha.</div>
+    <div class="catalogue-sub">Create a visual, client-specific catalogue linked to the active offer and revision. Plant selection is limited to items included in that offer.</div>
     <div class="catalogue-fields">
       <div><label for="catTitle">Catalogue title</label><input id="catTitle" value="Katalog biljaka" placeholder="Katalog biljaka"></div>
       <div><label for="catClient">Client / project</label><input id="catClient" placeholder="e.g. Villa Maris"></div>
@@ -345,15 +358,28 @@ td input{width:100%;border:0;outline:0;background:transparent}
       <select id="catSavedSelect" class="cat-input" style="max-width:280px" aria-label="Saved catalogues"><option value="">Saved catalogues…</option></select>
       <button class="cat-btn" onclick="openSavedPlantCatalogue()">Open selected</button>
       <button class="cat-btn" onclick="addCatalogueArea()">+ Add garden area</button>
+      <button class="cat-btn" onclick="linkCatalogueToCurrentRevision()">Link to current offer revision</button>
       <button class="cat-btn" onclick="savePlantCatalogue(true)">Save catalogue</button>
       <button class="cat-btn primary" onclick="createPlantCataloguePDF()">Preview / Export PDF</button>
       <button class="cat-btn" onclick="hideCatalogueTab()">Back to Offer</button>
     </div>
-    <div class="muted" id="catalogueSaveStatus" style="margin-top:10px">Catalogue auto-save is ready on this device.</div>
+    <div class="muted" id="catalogueLinkStatus" style="margin-top:7px">Not linked to an offer revision yet.</div>
+    <div class="muted" id="catalogueSaveStatus" style="margin-top:6px">Catalogue auto-save is ready on this device.</div>
   </div>
   <div class="catalogue-card">
     <h2>Garden areas and selected plants</h2>
     <div id="catalogueAreas"></div>
+  </div>
+</div>
+<div id="imagesApp" class="catalogue-app no-print">
+  <div class="catalogue-card">
+    <h1 class="catalogue-heading">Images · Plant Olive</h1>
+    <div class="catalogue-sub">Upload plant photos once and link each image to one or more Stanje Zaliha items using Šifra. The code-based connection remains stable when catalogue rows are reordered or refreshed.</div>
+    <div class="cat-toolbar"><button class="cat-btn" onclick="showCatalogueTab()">Plant Catalogue</button><button class="cat-btn" onclick="hideImagesTab()">Back to Offer</button></div>
+    <div class="cat-upload" style="margin-top:14px"><label class="cat-label" for="imageLibraryUpload">Upload plant image</label><input id="imageLibraryUpload" type="file" accept="image/*" onchange="uploadLibraryImage(this)"><p class="muted">Images are resized for web use. Each image can be connected to multiple Šifra codes.</p></div>
+    <div class="catalogue-fields" style="margin-top:14px"><div><label for="imageLibrarySearch">Search images</label><input id="imageLibrarySearch" class="cat-input" placeholder="Image name or Šifra..." oninput="renderImageLibrary()"></div><div><label for="imageStockSearch">Find Stanje Zaliha item</label><input id="imageStockSearch" class="cat-input" placeholder="Search by Šifra or Naziv..." oninput="renderImageStockMatches()"></div><div><label>Selected image</label><div id="selectedImageStatus" class="cat-input" style="min-height:39px">Select an image below to link it to items.</div></div></div>
+    <div id="imageStockMatches" class="image-stock-matches"></div>
+    <div id="imageLibraryGrid" class="image-library-grid"></div>
   </div>
 </div>
 <div id="cataloguePrintReport"></div>
@@ -684,6 +710,7 @@ function stockSuggestions(term){
   return STOCK_DATA.filter(x=>stockMatch(x,term)).slice(0,10);
 }
 function applyStockItem(targetItem,item){
+  targetItem.stockCode=String(item.sifra||"");
   targetItem.desc=item.naziv;
   targetItem.unit=item.jm;
   targetItem.price=Number(item.vpc)||0;
@@ -849,6 +876,12 @@ async function save(){
     if(revError){alert("Offer header was saved, but revision failed: "+revError.message);return;}
     await sb.from("offers").update({current_revision:nextRevision,updated_at:new Date().toISOString()}).eq("id",o.id);
     o.revision=nextRevision;
+    if(!plantCatalogue.offerId || String(plantCatalogue.offerId)===String(o.id)){
+      plantCatalogue.offerId=o.id;plantCatalogue.offerNo=o.no||"";plantCatalogue.offerRevision=nextRevision;
+      if(!plantCatalogue.client)plantCatalogue.client=o.customer||"";
+      try{localStorage.setItem(catalogueRevisionKey(o.id,nextRevision),JSON.stringify(plantCatalogue));}catch(e){}
+      savePlantCatalogue(false);
+    }
     clearTimeout(cloudDraftTimer);
     await cloudDraftSavePromise.catch(()=>{});
     await sb.from("offer_drafts").delete().eq("offer_id",String(o.id)).eq("created_by",user.id);
@@ -875,6 +908,7 @@ async function loadRevision(offerId, revisionNo){
   o=rev.snapshot;
   o.revision=rev.revision_no;
   render(false);
+  loadCatalogueForOfferRevision();
   await refreshOfferDirectory();
 }
 
@@ -882,7 +916,7 @@ async function loadLatestOffer(offerId){
   if(!supabaseReady)return;
   const {data:rev,error}=await sb.from("offer_revisions").select("snapshot,revision_no").eq("offer_id",offerId).order("revision_no",{ascending:false}).limit(1).single();
   if(error){alert("Could not open offer: "+error.message);return;}
-  o=rev.snapshot;o.revision=rev.revision_no;render(false);await refreshOfferDirectory();
+  o=rev.snapshot;o.revision=rev.revision_no;render(false);loadCatalogueForOfferRevision();await refreshOfferDirectory();
 }
 
 function directoryOfferHtml(row,revisions){
@@ -1018,17 +1052,20 @@ function createPDF(){
 }
 
 // Plant Catalogue builder — uses the existing stock list and embedded Plant Olive logo.
-let plantCatalogue = {id:Date.now(),title:"Katalog biljaka",client:"",date:localDateString(),areas:[]};
+let plantCatalogue = {id:Date.now(),title:"Katalog biljaka",client:"",date:localDateString(),areas:[],offerId:null,offerNo:"",offerRevision:null};
+let plantImages=[];let selectedLibraryImageId=null;
+const PLANT_IMAGES_KEY="plantOliveImageLibrary_v1";
 let catalogueSaveTimer=null;
 const CATALOGUE_STORAGE_KEY="plantOlivePlantCatalogue_v1";
 const CATALOGUE_LIBRARY_KEY="plantOlivePlantCatalogues_v1";
 function showCatalogueTab(){
+  hideImagesTab(false);
   document.getElementById("catalogueApp").classList.add("active");
   document.querySelector(".editor.wrap")?.style.setProperty("display","none");
   document.getElementById("offerDirectory")?.style.setProperty("display","none");
   document.getElementById("catalogueTabBtn")?.classList.add("primary");
   document.getElementById("catalogueApp").scrollIntoView({behavior:"smooth",block:"start"});
-  renderPlantCatalogue();
+  renderPlantCatalogue();updateCatalogueLinkStatus();
 }
 function hideCatalogueTab(){
   document.getElementById("catalogueApp").classList.remove("active");
@@ -1037,10 +1074,26 @@ function hideCatalogueTab(){
   document.getElementById("catalogueTabBtn")?.classList.remove("primary");
   document.body.classList.remove("catalogue-print-active");
 }
+function showImagesTab(){
+  hideCatalogueTab();
+  document.getElementById("imagesApp").classList.add("active");
+  document.querySelector(".editor.wrap")?.style.setProperty("display","none");
+  document.getElementById("offerDirectory")?.style.setProperty("display","none");
+  document.getElementById("imagesTabBtn")?.classList.add("primary");
+  renderImageLibrary();renderImageStockMatches();
+  document.getElementById("imagesApp").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function hideImagesTab(restore=true){
+  document.getElementById("imagesApp")?.classList.remove("active");
+  document.getElementById("imagesTabBtn")?.classList.remove("primary");
+  if(restore){document.querySelector(".editor.wrap")?.style.removeProperty("display");document.getElementById("offerDirectory")?.style.removeProperty("display");}
+}
+function focusOfferForCatalogue(){hideCatalogueTab();document.querySelector(".editor.wrap")?.scrollIntoView({behavior:"smooth",block:"start"});}
+
 function newPlantCatalogue(){
   if(plantCatalogue.areas?.length && !confirm("Start a new catalogue? The current catalogue will be saved first.")) return;
   savePlantCatalogue(false);
-  plantCatalogue={id:Date.now(),title:"Katalog biljaka",client:"",date:localDateString(),areas:[]};
+  plantCatalogue={id:Date.now(),title:"Katalog biljaka",client:o?.customer||"",date:localDateString(),areas:[],offerId:null,offerNo:o?.no||"",offerRevision:null};
   addCatalogueArea(false); renderPlantCatalogue(); savePlantCatalogue(false);
 }
 function addCatalogueArea(save=true){
@@ -1049,10 +1102,8 @@ function addCatalogueArea(save=true){
 }
 function removeCatalogueArea(index){if(!confirm("Remove this garden area and its plants?"))return;plantCatalogue.areas.splice(index,1);renderPlantCatalogue();savePlantCatalogue(false)}
 function addCataloguePlant(areaIndex,stockIndex=null){
-  const area=plantCatalogue.areas[areaIndex];if(!area)return;
-  const stock=stockIndex===null?null:STOCK_DATA[stockIndex];
-  area.plants.push({id:Date.now()+Math.random(),name:stock?.naziv||"",code:stock?.sifra||"",description:"",photo:""});
-  renderPlantCatalogue();savePlantCatalogue(false);
+  if(stockIndex===null){alert("Select a plant from the current offer using the search box above.");return;}
+  chooseCatalogueStock(areaIndex,stockIndex);
 }
 function removeCataloguePlant(ai,pi){plantCatalogue.areas[ai].plants.splice(pi,1);renderPlantCatalogue();savePlantCatalogue(false)}
 function catalogueEscape(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -1063,6 +1114,7 @@ function cataloguePhotoInput(fileInput, callback){
   const reader=new FileReader();reader.onload=()=>{callback(String(reader.result||""));renderPlantCatalogue();savePlantCatalogue(false)};reader.readAsDataURL(file);
 }
 function renderPlantCatalogue(){
+  (plantCatalogue.areas||[]).forEach(area=>(area.plants||[]).forEach(plant=>{if(!plant.photo&&plant.code)plant.photo=getPlantImageForCode(plant.code)}));
   const title=document.getElementById("catTitle"),client=document.getElementById("catClient"),date=document.getElementById("catDate");
   if(!title||!client||!date)return;
   title.value=plantCatalogue.title||"Katalog biljaka";client.value=plantCatalogue.client||"";date.value=plantCatalogue.date||localDateString();
@@ -1073,7 +1125,7 @@ function renderPlantCatalogue(){
     <div class="cat-area-head"><input aria-label="Garden area title" value="${catalogueEscape(area.title)}" onchange="updateCatalogueAreaTitle(${ai},this.value)" placeholder="Garden area / headline"><button class="cat-btn" onclick="removeCatalogueArea(${ai})">Remove area</button></div>
     <div class="cat-area-body">
       <div class="cat-upload-row"><div class="cat-upload"><label class="cat-label">Site / garden photograph</label><input type="file" accept="image/*" onchange="cataloguePhotoInput(this,v=>{plantCatalogue.areas[${ai}].sitePhoto=v})">${area.sitePhoto?`<img class="cat-image-preview" src="${area.sitePhoto}" alt="Site photo">`:''}</div>
-      <div class="cat-upload"><label class="cat-label">Add a plant from Stanje Zaliha</label><div class="cat-search-wrap"><input class="cat-search" id="catSearch${ai}" placeholder="Search Šifra or Naziv..." oninput="searchCatalogueStock(${ai},this.value)" autocomplete="off"><button class="cat-btn primary" onclick="addCataloguePlant(${ai})">+ Manual plant</button><div class="cat-search-results" id="catResults${ai}"></div></div><p class="muted">Select a matching item to add its name. Upload its presentation photo below.</p></div></div>
+      <div class="cat-upload"><label class="cat-label">Add a plant from the current offer</label><div class="cat-search-wrap"><input class="cat-search" id="catSearch${ai}" placeholder="Search offer plants by Šifra or Naziv..." oninput="searchCatalogueStock(${ai},this.value)" autocomplete="off"><div class="cat-search-results" id="catResults${ai}"></div></div><p class="muted">Only plant items already included in the active offer are shown. Link this catalogue to a revision to reopen the matching catalogue later.</p></div></div>
       ${area.plants.length?`<div class="cat-plants">${area.plants.map((plant,pi)=>`<div class="cat-plant">
         <button class="remove" onclick="removeCataloguePlant(${ai},${pi})" title="Remove plant">✕</button>
         ${plant.photo?`<img src="${plant.photo}" alt="${catalogueEscape(plant.name)}">`:`<div class="cat-empty" style="height:170px;display:grid;place-items:center;padding:10px">Plant photo not added</div>`}
@@ -1082,21 +1134,39 @@ function renderPlantCatalogue(){
         <input type="text" value="${catalogueEscape(plant.description||'')}" aria-label="Description" placeholder="Optional description" oninput="updateCataloguePlant(${ai},${pi},'description',this.value)">
         <div class="muted">${plant.code?"Šifra: "+catalogueEscape(plant.code):"Manual plant"}</div>
       </div>`).join("")}</div>`:'<div class="cat-empty">No plants added to this area yet.</div>'}
-      <div class="cat-toolbar"><button class="cat-btn" onclick="addCataloguePlant(${ai})">+ Add manual plant</button></div>
+      <div class="cat-toolbar"><button class="cat-btn" onclick="focusOfferForCatalogue()">Edit offer items</button></div>
     </div></section>`).join("");
 }
 function updateCatalogueAreaTitle(ai,value){plantCatalogue.areas[ai].title=value;queueCatalogueSave()}
 function updateCataloguePlant(ai,pi,key,value){plantCatalogue.areas[ai].plants[pi][key]=value;queueCatalogueSave()}
+function getOfferPlantChoices(){
+  const choices=[];const seen=new Set();
+  (o?.sections||[]).forEach((sec,si)=>(sec.items||[]).forEach((it,ii)=>{
+    const desc=String(it.desc||"").trim();if(!desc)return;
+    let stock=null;
+    if(it.stockCode) stock=STOCK_DATA.find(x=>String(x.sifra)===String(it.stockCode));
+    if(!stock){const m=desc.match(/\(([^()]+)\)\s*$/);if(m)stock=STOCK_DATA.find(x=>String(x.sifra).toLocaleLowerCase("hr-HR")===m[1].trim().toLocaleLowerCase("hr-HR"));}
+    if(!stock)stock=STOCK_DATA.find(x=>String(x.naziv).trim().toLocaleLowerCase("hr-HR")===desc.toLocaleLowerCase("hr-HR"));
+    if(!stock)return;
+    const code=String(stock.sifra);if(seen.has(code))return;seen.add(code);
+    choices.push({...stock,offerSection:sec.name||("Headline "+(si+1)),offerItemDesc:desc,offerSectionIndex:si,offerItemIndex:ii});
+  }));return choices;
+}
+function getPlantImageForCode(code){return plantImages.find(img=>(img.codes||[]).includes(String(code)))?.src||"";}
 function searchCatalogueStock(ai,term){
   const box=document.getElementById("catResults"+ai);if(!box)return;
   const q=String(term||"").trim();if(!q){box.classList.remove("open");box.innerHTML="";return;}
-  const rows=STOCK_DATA.filter(x=>stockMatch(x,q)).slice(0,12);
-  box.innerHTML=rows.map(x=>`<div class="cat-search-option" onclick="chooseCatalogueStock(${ai},${STOCK_DATA.indexOf(x)})"><strong>${catalogueEscape(x.naziv)}</strong><span>${catalogueEscape(x.sifra)} · ${catalogueEscape(x.jm)} · VPC ${N(x.vpc)}</span></div>`).join("")||'<div class="cat-search-option">No matching items</div>';
+  const choices=getOfferPlantChoices().filter(x=>stockMatch(x,q)).slice(0,12);
+  box.innerHTML=choices.map(x=>`<div class="cat-search-option" onclick="chooseCatalogueStock(${ai},${STOCK_DATA.findIndex(s=>String(s.sifra)===String(x.sifra))})"><strong>${catalogueEscape(x.naziv)}</strong><span>${catalogueEscape(x.sifra)} · ${catalogueEscape(x.jm)} · from ${catalogueEscape(x.offerSection)}</span></div>`).join("")||'<div class="cat-search-option">No matching plants in this offer. Add the plant to the offer first.</div>';
   box.classList.add("open");
 }
 function chooseCatalogueStock(ai,stockIndex){
-  const box=document.getElementById("catResults"+ai);const input=document.getElementById("catSearch"+ai);const item=STOCK_DATA[stockIndex];if(!item)return;
-  plantCatalogue.areas[ai].plants.push({id:Date.now()+Math.random(),name:item.naziv,code:item.sifra,description:"",photo:""});
+  const item=STOCK_DATA[stockIndex];if(!item)return;
+  const available=getOfferPlantChoices().find(x=>String(x.sifra)===String(item.sifra));
+  if(!available){alert("This item is not included in the current offer. Add it to the offer first.");return;}
+  const area=plantCatalogue.areas[ai];if(!area)return;
+  if(area.plants.some(p=>String(p.code)===String(item.sifra))){alert("This plant is already in this garden area.");return;}
+  area.plants.push({id:Date.now()+Math.random(),name:item.naziv,code:String(item.sifra),description:"",photo:getPlantImageForCode(item.sifra)});
   renderPlantCatalogue();savePlantCatalogue(false);
 }
 function queueCatalogueSave(){
@@ -1105,13 +1175,14 @@ function queueCatalogueSave(){
 }
 function savePlantCatalogue(showMessage=true){
   try{
+    if(o && plantCatalogue.offerId && String(plantCatalogue.offerId)===String(o.id) && plantCatalogue.offerRevision){localStorage.setItem(catalogueRevisionKey(plantCatalogue.offerId,plantCatalogue.offerRevision),JSON.stringify(plantCatalogue));}
     localStorage.setItem(CATALOGUE_STORAGE_KEY,JSON.stringify(plantCatalogue));
     let library=[];try{library=JSON.parse(localStorage.getItem(CATALOGUE_LIBRARY_KEY)||"[]");if(!Array.isArray(library))library=[];}catch(e){library=[];}
     const idx=library.findIndex(x=>String(x.id)===String(plantCatalogue.id));
     if(idx>=0)library[idx]=JSON.parse(JSON.stringify(plantCatalogue));else library.unshift(JSON.parse(JSON.stringify(plantCatalogue)));
     localStorage.setItem(CATALOGUE_LIBRARY_KEY,JSON.stringify(library));
     refreshSavedCatalogueOptions();
-    const badge=document.getElementById("catalogueSaveStatus");if(badge)badge.textContent="✓ Catalogue saved on this device · "+new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});if(showMessage)alert("Catalogue saved on this device.");return true;
+    const badge=document.getElementById("catalogueSaveStatus");if(badge)badge.textContent="✓ Catalogue saved on this device · "+new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});updateCatalogueLinkStatus();if(showMessage)alert("Catalogue saved on this device.");return true;
   }catch(err){const badge=document.getElementById("catalogueSaveStatus");if(badge)badge.textContent="Could not save locally. Try smaller photos.";console.warn("Catalogue save failed",err);return false;}
 }
 function refreshSavedCatalogueOptions(){
@@ -1123,7 +1194,50 @@ function openSavedPlantCatalogue(){
   const id=document.getElementById("catSavedSelect")?.value;if(!id)return alert("Please select a saved catalogue first.");
   try{const library=JSON.parse(localStorage.getItem(CATALOGUE_LIBRARY_KEY)||"[]");const found=library.find(x=>String(x.id)===String(id));if(!found)return alert("Catalogue not found.");plantCatalogue=found;localStorage.setItem(CATALOGUE_STORAGE_KEY,JSON.stringify(plantCatalogue));renderPlantCatalogue();}catch(e){alert("Could not open this catalogue.");}
 }
+function catalogueRevisionKey(offerId,revisionNo){return "plantOliveCatalogueLink_v1_"+String(offerId)+"_"+String(revisionNo);}
+function linkCatalogueToCurrentRevision(){
+  if(!o?.id){alert("Open or create an offer first.");return;}
+  const rev=Number(o.revision||1);
+  plantCatalogue.offerId=o.id;plantCatalogue.offerNo=o.no||"";plantCatalogue.offerRevision=rev;
+  if(!plantCatalogue.client)plantCatalogue.client=o.customer||"";
+  localStorage.setItem(catalogueRevisionKey(o.id,rev),JSON.stringify(plantCatalogue));
+  savePlantCatalogue(false);updateCatalogueLinkStatus();
+}
+function updateCatalogueLinkStatus(){
+  const el=document.getElementById("catalogueLinkStatus");if(!el)return;
+  el.textContent=plantCatalogue.offerId!=null&&plantCatalogue.offerRevision?`Linked to Offer ${plantCatalogue.offerNo||""} · Revision ${plantCatalogue.offerRevision}`:"Not linked to an offer revision. Click ‘Link to current offer revision’ to connect it.";
+}
+function loadCatalogueForOfferRevision(){
+  if(!o?.id || !o?.revision)return;
+  try{const raw=localStorage.getItem(catalogueRevisionKey(o.id,o.revision));if(raw){plantCatalogue=JSON.parse(raw);localStorage.setItem(CATALOGUE_STORAGE_KEY,JSON.stringify(plantCatalogue));}
+  else {plantCatalogue={id:Date.now(),title:"Katalog biljaka",client:o.customer||"",date:localDateString(),areas:[],offerId:o.id,offerNo:o.no||"",offerRevision:Number(o.revision)};}}
+  catch(e){console.warn("Could not load linked catalogue",e)}
+  renderPlantCatalogue();refreshSavedCatalogueOptions();updateCatalogueLinkStatus();
+}
+function loadPlantImages(){try{const data=JSON.parse(localStorage.getItem(PLANT_IMAGES_KEY)||"[]");plantImages=Array.isArray(data)?data:[];}catch(e){plantImages=[]}}
+function savePlantImages(){try{localStorage.setItem(PLANT_IMAGES_KEY,JSON.stringify(plantImages));return true;}catch(e){alert("Image library is too large for this browser storage. Please use smaller images or fewer images.");return false;}}
+function compressImageFile(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=reject;reader.onload=()=>{const im=new Image();im.onerror=reject;im.onload=()=>{const scale=Math.min(1,1400/Math.max(im.width,im.height));const canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(im.width*scale));canvas.height=Math.max(1,Math.round(im.height*scale));canvas.getContext("2d").drawImage(im,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL("image/jpeg",0.82));};im.src=String(reader.result);};reader.readAsDataURL(file);});}
+async function uploadLibraryImage(input){const file=input.files?.[0];if(!file)return;if(!file.type.startsWith("image/")){alert("Please select an image file.");return;}try{const src=await compressImageFile(file);const img={id:"img_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),name:file.name.replace(/\.[^.]+$/, ""),src,codes:[]};plantImages.unshift(img);if(!savePlantImages()){plantImages.shift();return;}selectedLibraryImageId=img.id;input.value="";renderImageLibrary();renderImageStockMatches();}catch(e){alert("Could not read this image.");}}
+function renderImageLibrary(){
+ const root=document.getElementById("imageLibraryGrid");if(!root)return;
+ const q=String(document.getElementById("imageLibrarySearch")?.value||"").trim().toLocaleLowerCase("hr-HR");
+ const rows=plantImages.filter(img=>!q||String(img.name).toLocaleLowerCase("hr-HR").includes(q)||(img.codes||[]).some(code=>String(code).toLocaleLowerCase("hr-HR").includes(q)||String(STOCK_DATA.find(x=>String(x.sifra)===String(code))?.naziv||"").toLocaleLowerCase("hr-HR").includes(q)));
+ root.innerHTML=rows.map(img=>`<div class="image-library-card ${img.id===selectedLibraryImageId?"selected":""}" onclick="selectLibraryImage('${img.id}')"><img src="${img.src}" alt="${catalogueEscape(img.name)}"><input type="text" value="${catalogueEscape(img.name)}" onclick="event.stopPropagation()" onchange="renameLibraryImage('${img.id}',this.value)" aria-label="Image name"><div class="muted">Linked Šifra: ${(img.codes||[]).map(catalogueEscape).join(", ")||"None yet"}</div><button class="cat-btn" onclick="event.stopPropagation();deleteLibraryImage('${img.id}')">Delete image</button></div>`).join("")||'<div class="cat-empty">No images yet. Upload the first plant photo above.</div>';
+ const status=document.getElementById("selectedImageStatus");if(status){const img=plantImages.find(x=>x.id===selectedLibraryImageId);status.textContent=img?`Selected: ${img.name} · ${(img.codes||[]).length} linked item(s)`:"Select an image below to link it to items.";}
+}
+function selectLibraryImage(id){selectedLibraryImageId=id;renderImageLibrary();renderImageStockMatches();}
+function renameLibraryImage(id,name){const img=plantImages.find(x=>x.id===id);if(img){img.name=name;savePlantImages();renderImageLibrary();}}
+function deleteLibraryImage(id){if(!confirm("Delete this image and its item links?"))return;plantImages=plantImages.filter(x=>x.id!==id);if(selectedLibraryImageId===id)selectedLibraryImageId=null;savePlantImages();renderImageLibrary();renderImageStockMatches();}
+function renderImageStockMatches(){
+ const root=document.getElementById("imageStockMatches");if(!root)return;
+ const img=plantImages.find(x=>x.id===selectedLibraryImageId);const q=String(document.getElementById("imageStockSearch")?.value||"").trim();
+ if(!img){root.innerHTML='<div class="cat-empty" style="grid-column:1/-1">Choose an uploaded image first, then search and tick the Stanje Zaliha items it represents.</div>';return;}
+ const rows=STOCK_DATA.filter(x=>!q||stockMatch(x,q)).slice(0,60);
+ root.innerHTML=rows.map(x=>`<label class="image-stock-option"><input type="checkbox" ${img.codes.includes(String(x.sifra))?"checked":""} onchange="toggleImageStockCode('${img.id}','${String(x.sifra).replace(/'/g,"\\'")}',this.checked)"><span><strong>${catalogueEscape(x.naziv)}</strong><span>Šifra: ${catalogueEscape(x.sifra)} · ${catalogueEscape(x.jm)} · VPC ${N(x.vpc)}</span></span></label>`).join("")||'<div class="cat-empty">No matching items.</div>';
+}
+function toggleImageStockCode(imageId,code,checked){const img=plantImages.find(x=>x.id===imageId);if(!img)return;img.codes=img.codes||[];if(checked&&!img.codes.includes(String(code)))img.codes.push(String(code));if(!checked)img.codes=img.codes.filter(x=>String(x)!==String(code));savePlantImages();renderImageLibrary();}
 function loadPlantCatalogue(){
+  loadPlantImages();
   try{const raw=localStorage.getItem(CATALOGUE_STORAGE_KEY);if(raw){const data=JSON.parse(raw);if(data&&Array.isArray(data.areas))plantCatalogue=data;}}catch(e){console.warn("Could not load catalogue",e)}
   if(!plantCatalogue.areas.length)plantCatalogue.areas.push({id:Date.now(),title:"Nova vrtna površina",sitePhoto:"",plants:[]});
   renderPlantCatalogue();refreshSavedCatalogueOptions();
@@ -1148,7 +1262,7 @@ function createPlantCataloguePDF(){
   setTimeout(()=>window.print(),150);
 }
 window.addEventListener("afterprint",()=>document.body.classList.remove("catalogue-print-active"));
-try{loadPlantCatalogue()}catch(e){console.warn("Catalogue initialisation failed",e)}
+try{loadPlantCatalogue();loadPlantImages()}catch(e){console.warn("Catalogue initialisation failed",e)}
 
 const screenLogo=document.getElementById("screenLogo");
 const loginLogo=document.getElementById("loginLogo");
