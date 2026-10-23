@@ -74,6 +74,7 @@ td input{width:100%;border:0;outline:0;background:transparent}
 .cat-upload{border:1px dashed #bdcbb9;background:#fafcf9;border-radius:10px;padding:12px;min-width:0}
 .cat-upload input{width:100%;font-size:12px}
 .cat-image-preview{display:block;width:100%;max-height:210px;object-fit:cover;border-radius:8px;margin-top:9px;background:#f1f1f1}
+.cat-site-preview{aspect-ratio:3/2;height:auto;max-height:none;object-fit:cover;object-position:center}
 .cat-plants{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .cat-plant{border:1px solid #e0e5dd;border-radius:10px;padding:10px;min-width:0;position:relative}
 .cat-plant img{width:100%;height:170px;object-fit:cover;border-radius:7px;background:#f3f3f3}
@@ -82,7 +83,13 @@ td input{width:100%;border:0;outline:0;background:transparent}
 .cat-plant .remove{position:absolute;right:14px;top:14px;background:#fff;color:#8b2c26;padding:5px 8px;box-shadow:0 1px 5px #0002}
 .cat-search-wrap{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
 .cat-search-results{display:none;position:absolute;left:0;right:82px;top:100%;z-index:10;background:#fff;border:1px solid #d8e0d5;border-radius:8px;box-shadow:0 8px 24px #0002;max-height:250px;overflow:auto}
-.cat-search-results.open{display:block}
+'.cat-search-results.open{display:block}
+.cat-stock-picker{position:relative;min-width:0}
+.cat-stock-picker .cat-search{box-sizing:border-box;padding:11px 12px}
+.cat-stock-picker .cat-search-results{right:0;top:calc(100% + 3px);max-height:280px;overflow:auto}
+.cat-search-hint{cursor:default;color:#647262;background:#f8faf7;font-size:11px}
+.cat-cover-editor-row{max-width:620px;margin-top:14px}
+.cat-cover-editor-row .cat-image-preview{aspect-ratio:3/2;max-height:230px;object-fit:cover}
 .cat-search-option{padding:10px;border-bottom:1px solid #edf0eb;cursor:pointer;font-size:12px}
 .cat-search-option:hover{background:#f0f5ed}
 .cat-search-option span{display:block;color:#778174;font-size:11px;margin-top:3px}
@@ -91,27 +98,57 @@ td input{width:100%;border:0;outline:0;background:transparent}
 @media(max-width:800px){.catalogue-app{padding:0 8px;margin:12px auto}.catalogue-fields{grid-template-columns:1fr 1fr}.cat-plants{grid-template-columns:repeat(2,minmax(0,1fr))}.cat-upload-row{grid-template-columns:1fr}.cat-plant img{height:145px}.catalogue-heading{font-size:27px}}
 @media(max-width:480px){.catalogue-fields,.cat-plants{grid-template-columns:1fr}.cat-area-head{align-items:stretch;flex-direction:column}.cat-search-results{right:0;top:calc(100% + 2px)}.cat-search-wrap{grid-template-columns:1fr}.cat-search-wrap button{width:100%}}
 @media print{
-  body.catalogue-print-active .top,body.catalogue-print-active .offer-directory,body.catalogue-print-active .editor,body.catalogue-print-active #catalogueApp,body.catalogue-print-active #stockPanel,body.catalogue-print-active #autosaveStatus,body.catalogue-print-active #printReport{display:none!important}
-  body.catalogue-print-active #cataloguePrintReport{display:block!important}
-  body.catalogue-print-active{background:#fff!important}
-  @page{size:A4 portrait;margin:11mm 10mm 12mm}
-  .cat-print-page{page-break-after:always;break-after:page;position:relative;min-height:270mm;color:#252b24;font-family:Arial,Helvetica,sans-serif}
+  body.catalogue-print-active .top,
+  body.catalogue-print-active .offer-directory,
+  body.catalogue-print-active .editor,
+  body.catalogue-print-active #catalogueApp,
+  body.catalogue-print-active #imagesApp,
+  body.catalogue-print-active #stockPanel,
+  body.catalogue-print-active #autosaveStatus,
+  body.catalogue-print-active #printReport{display:none!important}
+  body.catalogue-print-active #cataloguePrintReport{display:block!important;visibility:visible!important;margin:0!important;padding:0!important}
+  body.catalogue-print-active{background:#f6f5ef!important;margin:0!important;padding:0!important}
+  .cat-print-page{box-sizing:border-box;width:279mm;height:194mm;min-height:194mm;max-height:194mm;margin:0;padding:4mm 7mm 14mm;overflow:hidden;position:relative;page-break-after:always;break-after:page;break-inside:avoid;color:#40483F;font-family:Arial,Helvetica,sans-serif;background:#f7f6f0}
   .cat-print-page:last-child{page-break-after:auto;break-after:auto}
-  .cat-print-top{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #68765d;padding-bottom:8px;margin-bottom:15px}
-  .cat-print-logo{max-width:125px;max-height:60px;object-fit:contain}
-  .cat-print-kicker{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#6e7a68}
-  .cat-print-title{font-family:Cotoris,Georgia,serif;font-size:53pt;line-height:1.0;font-weight:400;margin:14px 0 20px;color:#1e261d}
-  .cat-print-area{font-family:Cotoris,Georgia,serif;font-size:26pt;line-height:1.05;margin:14px 0 18px;font-weight:400}
-  .cat-print-site{width:100%;max-height:95mm;object-fit:cover;margin:0 0 15px}
-  .cat-print-plant-grid{display:grid;grid-template-columns:1fr 1fr;gap:12mm 9mm}
-  .cat-print-plant{break-inside:avoid;display:flex;flex-direction:column;gap:7px}
-  .cat-print-plant img{width:100%;height:65mm;object-fit:cover}
-  .cat-print-plant-name{font-family:Cotoris,Georgia,serif;font-size:16.4pt;font-weight:700;line-height:1.1}
-  .cat-print-desc{font-size:9pt;line-height:1.35;color:#5f675d}
-  .cat-print-footer{position:absolute;bottom:0;left:0;right:0;border-top:1px solid #8c9486;padding-top:8px;display:flex;justify-content:space-between;gap:10px;font-size:8pt;color:#66705f}
-  .cat-print-cover{display:flex;flex-direction:column;justify-content:center;min-height:260mm;background:#f5f6f0;padding:14mm}
-  .cat-print-cover .cat-print-title{font-size:53pt}
-  .cat-print-cover-photo{width:100%;height:145mm;object-fit:cover;margin:10mm 0}
+  .cat-print-page::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background-image:url("data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAxMDAwIDEwMDAiPgogIDxkZWZzPgogICAgPHN0eWxlPgogICAgICAuY2xzLTEgewogICAgICAgIGZpbGw6IG5vbmU7CiAgICAgIH0KCiAgICAgIC5jbHMtMSwgLmNscy0yLCAuY2xzLTMsIC5jbHMtNCwgLmNscy01IHsKICAgICAgICBzdHJva2Utd2lkdGg6IDBweDsKICAgICAgfQoKICAgICAgLmNscy0yIHsKICAgICAgICBmaWxsOiB1cmwoI29saXZlX3VfYm9qaSk7CiAgICAgIH0KCiAgICAgIC5jbHMtMyB7CiAgICAgICAgZmlsbDogI2EwYjdhOTsKICAgICAgfQoKICAgICAgLmNscy00IHsKICAgICAgICBmaWxsOiAjNDU2NjMxOwogICAgICB9CgogICAgICAuY2xzLTUgewogICAgICAgIGZpbGw6ICM0MTQ5NDA7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgICA8cGF0dGVybiBpZD0ib2xpdmVfdV9ib2ppIiBkYXRhLW5hbWU9Im9saXZlIHUgYm9qaSIgeD0iMCIgeT0iMCIgd2lkdGg9IjQyNC4yMiIgaGVpZ2h0PSIzMTkuNDIiIHBhdHRlcm5UcmFuc2Zvcm09InRyYW5zbGF0ZSg4NjYuMTQgMjk4My45Mykgc2NhbGUoMS43KSIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgdmlld0JveD0iMCAwIDQyNC4yMiAzMTkuNDIiPgogICAgICA8Zz4KICAgICAgICA8cmVjdCBjbGFzcz0iY2xzLTEiIHdpZHRoPSI0MjQuMjIiIGhlaWdodD0iMzE5LjQyIi8+CiAgICAgICAgPGc+CiAgICAgICAgICA8cGF0aCBjbGFzcz0iY2xzLTUiIGQ9Ik00MjcuMiwyMDUuNjhjLjA0LTEuNTItLjE2LTMuMTMtMS4wOC00LjM0LTEuNC0xLjg1LTQuMDQtMi4yNC02LjMzLTEuOTEtNS4wMi43Mi05LjM3LDQuMjMtMTEuODgsOC42My0xLjE5LDIuMDktMi4wMyw0LjQ2LTEuOTUsNi44N3MxLjE4LDQuODYsMy4xOSw2LjE4YzMuNjksMi40Myw5LjA5LS4zNSwxMS45OC0yLjg3LDMuNi0zLjEzLDUuOTUtNy43Niw2LjA2LTEyLjU1WiIvPgogICAgICAgICAgPHBhdGggY2xhc3M9ImNscy01IiBkPSJNMzU3LjczLDI1OC4wMmMtMS40My0uNTEtMy4wMi0uODMtNC40Ni0uMzQtMi4xOS43NS0zLjQsMy4xMy0zLjgsNS40MS0uODksNC45OSwxLjA3LDEwLjIyLDQuNDYsMTMuOTksMS42MSwxLjc5LDMuNiwzLjMyLDUuOTEsNHM0Ljk4LjQxLDYuODctMS4wOWMzLjQ3LTIuNzQsMi41Mi04Ljc0LDEuMDMtMTIuMjgtMS44NC00LjQtNS41LTguMDgtMTAuMDItOS43WiIvPgogICAgICAgICAgPHBhdGggY2xhc3M9ImNscy00IiBkPSJNNDk5LjE5LDIyNi4wMmwtMS4xLDMuOTJjLTEzLjUsNDguMTItNjMuNDUsNzYuMTktMTExLjU3LDYyLjY5bC0xNi4zMy00LjU4LDEuMS0zLjkyYzEzLjUtNDguMTIsNjMuNDUtNzYuMTksMTExLjU3LTYyLjY5bDE2LjMzLDQuNThaTTQ2NC4wMywyNDMuOTljLTQwLjM2LTYuMjEtNTguMjgsMjYuMjUtNTguMjgsMjYuMjUsMCwwLDM4LjM4LDguMDQsNTguMjgtMjYuMjVaIi8+CiAgICAgICAgICA8cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik0zOTQuMDEsMTgzLjEybC45NSwxLjk3YzExLjYxLDI0LjE3LDEuNDMsNTMuMTgtMjIuNzQsNjQuNzlsLTguMiwzLjk0LS45NS0xLjk3Yy0xMS42MS0yNC4xNy0xLjQzLTUzLjE4LDIyLjc0LTY0Ljc5bDguMi0zLjk0Wk0zODYuMjIsMjAyLjgyYy0xOC40NiwxMS44LTE0LjE4LDMxLjIyLTE0LjE4LDMxLjIyLDAsMCwxOC4zMS0xMC4zNiwxNC4xOC0zMS4yMloiLz4KICAgICAgICA8L2c+CiAgICAgICAgPGc+CiAgICAgICAgICA8cGF0aCBjbGFzcz0iY2xzLTUiIGQ9Ik0yMTUuMDksMjg1LjUzYy4wNC0xLjUyLS4xNi0zLjEzLTEuMDgtNC4zNC0xLjQtMS44NS00LjA0LTIuMjQtNi4zMy0xLjkxLTUuMDIuNzItOS4zNyw0LjIzLTExLjg4LDguNjMtMS4xOSwyLjA5LTIuMDMsNC40Ni0xLjk1LDYuODdzMS4xOCw0Ljg2LDMuMTksNi4xOGMzLjY5LDIuNDMsOS4wOS0uMzUsMTEuOTgtMi44NywzLjYtMy4xMyw1Ljk1LTcuNzYsNi4wNi0xMi41NVoiLz4KICAgICAgICAgIDxwYXRoIGNsYXNzPSJjbHMtNCIgZD0iTTI4Ny4wOCwzMDUuODdsLTEuMSwzLjkyYy0xMy41LDQ4LjEyLTYzLjQ1LDc2LjE5LTExMS41Nyw2Mi42OWwtMTYuMzMtNC41OCwxLjEtMy45MmMxMy41LTQ4LjEyLDYzLjQ1LTc2LjE5LDExMS41Ny02Mi42OWwxNi4zMyw0LjU4Wk0yNTEuOTIsMzIzLjg1Yy00MC4zNi02LjIxLTU4LjI4LDI2LjI1LTU4LjI4LDI2LjI1LDAsMCwzOC4zOCw4LjA0LDU4LjI4LTI2LjI1WiIvPgogICAgICAgICAgPHBhdGggY2xhc3M9ImNscy0zIiBkPSJNMTgxLjksMjYyLjk4bC45NSwxLjk3YzExLjYxLDI0LjE3LDEuNDMsNTMuMTgtMjIuNzQsNjQuNzlsLTguMiwzLjk0LS45NS0xLjk3Yy0xMS42MS0yNC4xNy0xLjQzLTUzLjE4LDIyLjc0LTY0Ljc5bDguMi0zLjk0Wk0xNzQuMTEsMjgyLjY4Yy0xOC40NiwxMS44LTE0LjE4LDMxLjIyLTE0LjE4LDMxLjIyLDAsMCwxOC4zMS0xMC4zNiwxNC4xOC0zMS4yMloiLz4KICAgICAgICA8L2c+CiAgICAgICAgPGc+CiAgICAgICAgICA8cGF0aCBjbGFzcz0iY2xzLTUiIGQ9Ik0yLjk4LDIwNS42OGMuMDQtMS41Mi0uMTYtMy4xMy0xLjA4LTQuMzQtMS40LTEuODUtNC4wNC0yLjI0LTYuMzMtMS45MS01LjAyLjcyLTkuMzcsNC4yMy0xMS44OCw4LjYzLTEuMTksMi4wOS0yLjAzLDQuNDYtMS45NSw2Ljg3czEuMTgsNC44NiwzLjE5LDYuMThjMy42OSwyLjQzLDkuMDktLjM1LDExLjk4LTIuODcsMy42LTMuMTMsNS45NS03Ljc2LDYuMDYtMTIuNTVaIi8+CiAgICAgICAgICA8cGF0aCBjbGFzcz0iY2xzLTQiIGQ9Ik03NC45NywyMjYuMDJsLTEuMSwzLjkyYy0xMy41LDQ4LjEyLTYzLjQ1LDc2LjE5LTExMS41Nyw2Mi42OWwtMTYuMzMtNC41OCwxLjEtMy45MmMxMy41LTQ4LjEyLDYzLjQ1LTc2LjE5LDExMS41Ny02Mi42OWwxNi4zMyw0LjU4Wk0zOS44MSwyNDMuOTljLTQwLjM2LTYuMjEtNTguMjgsMjYuMjUtNTguMjgsMjYuMjUsMCwwLDM4LjM4LDguMDQsNTguMjgtMjYuMjVaIi8+CiAgICAgICAgPC9nPgogICAgICAgIDxnPgogICAgICAgICAgPHBhdGggY2xhc3M9ImNscy01IiBkPSJNNDI3LjIsNDUuOTZjLjA0LTEuNTItLjE2LTMuMTMtMS4wOC00LjM0LTEuNC0xLjg1LTQuMDQtMi4yNC02LjMzLTEuOTEtNS4wMi43Mi05LjM3LDQuMjMtMTEuODgsOC42My0xLjE5LDIuMDktMi4wMyw0LjQ2LTEuOTUsNi44N3MxLjE4LDQuODYsMy4xOSw2LjE4YzMuNjksMi40Myw5LjA5LS4zNSwxMS45OC0yLjg3LDMuNi0zLjEzLDUuOTUtNy43Niw2LjA2LTEyLjU1WiIvPgogICAgICAgICAgPHBhdGggY2xhc3M9ImNscy01IiBkPSJNMzU3LjczLDk4LjMxYy0xLjQzLS41MS0zLjAyLS44My00LjQ2LS4zNC0yLjE5Ljc1LTMuNCwzLjEzLTMuOCw1LjQxLS44OSw0Ljk5LDEuMDcsMTAuMjIsNC40NiwxMy45OSwxLjYxLDEuNzksMy42LDMuMzIsNS45MSw0czQuOTguNDEsNi44Ny0xLjA5YzMuNDctMi43NCwyLjUyLTguNzQsMS4wMy0xMi4yOC0xLjg0LTQuNC01LjUtOC4wOC0xMC4wMi05LjdaIi8+CiAgICAgICAgICA8cGF0aCBjbGFzcz0iY2xzLTQiIGQ9Ik00OTkuMTksNjYuMzFsLTEuMSwzLjkyYy0xMy41LDQ4LjEyLTYzLjQ1LDc2LjE5LTExMS41Nyw2Mi42OWwtMTYuMzMtNC41OCwxLjEtMy45MmMxMy41LTQ4LjEyLDYzLjQ1LTc2LjE5LDExMS41Ny02Mi42OWwxNi4zMyw0LjU4Wk00NjQuMDMsODQuMjhjLTQwLjM2LTYuMjEtNTguMjgsMjYuMjUtNTguMjgsMjYuMjUsMCwwLDM4LjM4LDguMDQsNTguMjgtMjYuMjVaIi8+CiAgICAgICAgICA8cGF0aCBjbGFzcz0iY2xzLTMiIGQ9Ik0zOTQuMDEsMjMuNDFsLjk1LDEuOTdjMTEuNjEsMjQuMTcsMS40Myw1My4xOC0yMi43NCw2NC43OWwtOC4yLDMuOTQtLjk1LTEuOTdjLTExLjYxLTI0LjE3LTEuNDMtNTMuMTgsMjIuNzQtNjQuNzlsOC4yLTMuOTRaTTM4Ni4yMiw0My4xMWMtMTguNDYsMTEuOC0xNC4xOCwzMS4yMi0xNC4xOCwzMS4yMiwwLDAsMTguMzEtMTAuMzYsMTQuMTgtMzEuMjJaIi8+CiAgICAgICAgPC9nPgogICAgICAgIDxnPgogICAgICAgICAgPHBhdGggY2xhc3M9ImNscy01IiBkPSJNMjE1LjA5LDEyNS44MmMuMDQtMS41Mi0uMTYtMy4xMy0xLjA4LTQuMzQtMS40LTEuODUtNC4wNC0yLjI0LTYuMzMtMS45MS01LjAyLjcyLTkuMzcsNC4yMy0xMS44OCw4LjYzLTEuMTksMi4wOS0yLjAzLDQuNDYtMS45NSw2Ljg3czEuMTgsNC44NiwzLjE5LDYuMThjMy42OSwyLjQzLDkuMDktLjM1LDExLjk4LTIuODcsMy42LTMuMTMsNS45NS03Ljc2LDYuMDYtMTIuNTVaIi8+CiAgICAgICAgICA8cGF0aCBjbGFzcz0iY2xzLTUiIGQ9Ik0xNDUuNjIsMTc4LjE3Yy0xLjQzLS41MS0zLjAyLS44My00LjQ2LS4zNC0yLjE5Ljc1LTMuNCwzLjEzLTMuOCw1LjQxLS44OSw0Ljk5LDEuMDcsMTAuMjIsNC40NiwxMy45OSwxLjYxLDEuNzksMy42LDMuMzIsNS45MSw0czQuOTguNDEsNi44Ny0xLjA5YzMuNDctMi43NCwyLjUyLTguNzQsMS4wMy0xMi4yOC0xLjg0LTQuNC01LjUtOC4wOC0xMC4wMi05LjdaIi8+CiAgICAgICAgICA8cGF0aCBjbGFzcz0iY2xzLTQiIGQ9Ik0yODcuMDgsMTQ2LjE2bC0xLjEsMy45MmMtMTMuNSw0OC4xMi02My40NSw3Ni4xOS0xMTEuNTcsNjIuNjlsLTE2LjMzLTQuNTgsMS4xLTMuOTJjMTMuNS00OC4xMiw2My40NS03Ni4xOSwxMTEuNTctNjIuNjlsMTYuMzMsNC41OFpNMjUxLjkyLDE2NC4xNGMtNDAuMzYtNi4yMS01OC4yOCwyNi4yNS01OC4yOCwyNi4yNSwwLDAsMzguMzgsOC4wNCw1OC4yOC0yNi4yNVoiLz4KICAgICAgICAgIDxwYXRoIGNsYXNzPSJjbHMtMyIgZD0iTTE4MS45LDEwMy4yN2wuOTUsMS45N2MxMS42MSwyNC4xNywxLjQzLDUzLjE4LTIyLjc0LDY0Ljc5bC04LjIsMy45NC0uOTUtMS45N2MtMTEuNjEtMjQuMTctMS40My01My4xOCwyMi43NC02NC43OWw4LjItMy45NFpNMTc0LjExLDEyMi45N2MtMTguNDYsMTEuOC0xNC4xOCwzMS4yMi0xNC4xOCwzMS4yMiwwLDAsMTguMzEtMTAuMzYsMTQuMTgtMzEuMjJaIi8+CiAgICAgICAgPC9nPgogICAgICAgIDxnPgogICAgICAgICAgPHBhdGggY2xhc3M9ImNscy01IiBkPSJNMi45OCw0NS45NmMuMDQtMS41Mi0uMTYtMy4xMy0xLjA4LTQuMzQtMS40LTEuODUtNC4wNC0yLjI0LTYuMzMtMS45MS01LjAyLjcyLTkuMzcsNC4yMy0xMS44OCw4LjYzLTEuMTksMi4wOS0yLjAzLDQuNDYtMS45NSw2Ljg3czEuMTgsNC44NiwzLjE5LDYuMThjMy42OSwyLjQzLDkuMDktLjM1LDExLjk4LTIuODcsMy42LTMuMTMsNS45NS03Ljc2LDYuMDYtMTIuNTVaIi8+CiAgICAgICAgICA8cGF0aCBjbGFzcz0iY2xzLTQiIGQ9Ik03NC45Nyw2Ni4zMWwtMS4xLDMuOTJjLTEzLjUsNDguMTItNjMuNDUsNzYuMTktMTExLjU3LDYyLjY5bC0xNi4zMy00LjU4LDEuMS0zLjkyQy0zOS40NCw3Ni4yOSwxMC41Miw0OC4yMiw1OC42NCw2MS43MmwxNi4zMyw0LjU4Wk0zOS44MSw4NC4yOGMtNDAuMzYtNi4yMS01OC4yOCwyNi4yNS01OC4yOCwyNi4yNSwwLDAsMzguMzgsOC4wNCw1OC4yOC0yNi4yNVoiLz4KICAgICAgICA8L2c+CiAgICAgICAgPGc+CiAgICAgICAgICA8cGF0aCBjbGFzcz0iY2xzLTUiIGQ9Ik0xNDUuNjIsMTguNDVjLTEuNDMtLjUxLTMuMDItLjgzLTQuNDYtLjM0LTIuMTkuNzUtMy40LDMuMTMtMy44LDUuNDEtLjg5LDQuOTksMS4wNywxMC4yMiw0LjQ2LDEzLjk5LDEuNjEsMS43OSwzLjYsMy4zMiw1LjkxLDRzNC45OC40MSw2Ljg3LTEuMDljMy40Ny0yLjc0LDIuNTItOC43NCwxLjAzLTEyLjI4LTEuODQtNC40LTUuNS04LjA4LTEwLjAyLTkuN1oiLz4KICAgICAgICAgIDxwYXRoIGNsYXNzPSJjbHMtNCIgZD0iTTI4Ny4wOC0xMy41NWwtMS4xLDMuOTJjLTEzLjUsNDguMTItNjMuNDUsNzYuMTktMTExLjU3LDYyLjY5bC0xNi4zMy00LjU4LDEuMS0zLjkyYzEzLjUtNDguMTIsNjMuNDUtNzYuMTksMTExLjU3LTYyLjY5bDE2LjMzLDQuNThaTTI1MS45Miw0LjQzYy00MC4zNi02LjIxLTU4LjI4LDI2LjI1LTU4LjI4LDI2LjI1LDAsMCwzOC4zOCw4LjA0LDU4LjI4LTI2LjI1WiIvPgogICAgICAgICAgPHBhdGggY2xhc3M9ImNscy0zIiBkPSJNMTgxLjktNTYuNDVsLjk1LDEuOTdjMTEuNjEsMjQuMTcsMS40Myw1My4xOC0yMi43NCw2NC43OWwtOC4yLDMuOTQtLjk1LTEuOTdjLTExLjYxLTI0LjE3LTEuNDMtNTMuMTgsMjIuNzQtNjQuNzlsOC4yLTMuOTRaTTE3NC4xMS0zNi43NWMtMTguNDYsMTEuOC0xNC4xOCwzMS4yMi0xNC4xOCwzMS4yMiwwLDAsMTguMzEtMTAuMzYsMTQuMTgtMzEuMjJaIi8+CiAgICAgICAgPC9nPgogICAgICA8L2c+CiAgICA8L3BhdHRlcm4+CiAgPC9kZWZzPgogIDxyZWN0IGNsYXNzPSJjbHMtMiIgeD0iLTU4LjU5IiB5PSItNDcuMTYiIHdpZHRoPSIxMDg0LjIzIiBoZWlnaHQ9IjEwOTEuMDEiLz4KPC9zdmc+");background-repeat:repeat;background-position:center;background-size:72mm 72mm;opacity:.045}
+  .cat-print-page>*{position:relative;z-index:1}
+  .cat-print-top{display:flex;align-items:center;justify-content:space-between;gap:8mm;height:17mm;box-sizing:border-box;border-bottom:1px solid #456632;padding-bottom:2mm;margin:0 0 3mm}
+  .cat-print-logo{display:block;max-width:48mm;max-height:16mm;object-fit:contain;object-position:left center}
+  .cat-print-header-copy{flex:1;min-width:0;text-align:right;color:#40483F}
+  .cat-print-kicker{font-size:8pt;letter-spacing:1.8px;text-transform:uppercase;color:#456632}
+  .cat-print-header-client{font-size:9pt;margin-top:1mm;color:#40483F}
+  .cat-print-title{font-family:Cotoris,Georgia,serif;font-size:53pt;line-height:1;font-weight:400;margin:0;color:#456632}
+  .cat-print-area{font-family:Cotoris,Georgia,serif;font-size:25pt;line-height:1.02;margin:0 0 3mm;font-weight:400;color:#456632;max-height:14mm;overflow:hidden;overflow-wrap:anywhere}
+  .cat-print-layout{display:grid;grid-template-columns:1.28fr 1fr;gap:7mm;width:100%;height:136mm;min-height:136mm;max-height:136mm;align-items:stretch}
+  .cat-print-site-panel{width:100%;height:auto;aspect-ratio:3/2;max-height:136mm;align-self:center;display:block;overflow:hidden;box-sizing:border-box}
+  .cat-print-site{display:block;width:100%;height:100%;max-height:none;aspect-ratio:auto;object-fit:cover;object-position:center;border:1px solid #e2e4da;box-sizing:border-box}
+  .cat-print-site-placeholder{width:100%;height:100%;aspect-ratio:auto;max-height:none;display:flex;align-items:center;justify-content:center;text-align:center;background:#eeefe7;border:1px dashed #aab6a0;color:#73806b;font-size:10pt;box-sizing:border-box;padding:8mm}
+  .cat-print-plant-list{height:136mm;min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:1mm}
+  .cat-print-plant-row{flex:1;min-height:0;box-sizing:border-box;display:grid;grid-template-columns:29mm minmax(0,1fr);gap:4mm;align-items:center;padding:1.5mm 0;border-bottom:1px solid #d8ddd2;break-inside:avoid}
+  .cat-print-plant-row:last-child{border-bottom:0}
+  .cat-print-plant-photo{display:block;width:28mm;height:28mm;border-radius:50%;object-fit:cover;background:#e7eadf;border:1px solid #d5dccf}
+  .cat-print-plant-photo-placeholder{width:28mm;height:28mm;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;background:#e7eadf;border:1px solid #d5dccf;color:#74816c;font-size:8pt;box-sizing:border-box}
+  .cat-print-plant-copy{min-width:0;overflow-wrap:anywhere}
+  .cat-print-plant-name{font-family:Cotoris,Georgia,serif;font-size:16.4pt;font-weight:700;line-height:1.08;color:#40483F;margin:0 0 1.5mm}
+  .cat-print-desc{font-family:Arial,Helvetica,sans-serif;font-size:8.5pt;line-height:1.3;color:#40483F;overflow-wrap:anywhere}
+  .cat-print-empty-list{height:100%;border:1px dashed #d5dbcf;display:flex;align-items:center;justify-content:center;color:#7e8878;font-size:10pt;text-align:center;padding:8mm;box-sizing:border-box}
+  .cat-print-footer{position:absolute;bottom:1mm;left:7mm;right:7mm;height:8mm;box-sizing:border-box;border-top:1px solid #456632;padding-top:2mm;display:grid;grid-template-columns:1fr 1.2fr 1.1fr auto;align-items:center;gap:5mm;font-size:7.5pt;color:#40483F}
+  .cat-print-footer span:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .cat-print-cover{padding:4mm 7mm 14mm;display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
+  .cat-print-cover-head{width:100%;height:31mm;flex:0 0 31mm;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:10mm;border-bottom:1px solid #456632;padding-bottom:3mm}
+  .cat-print-cover-logo{display:block;width:72mm;max-width:42%;max-height:25mm;object-fit:contain;object-position:left center}
+  .cat-print-cover-copy{flex:1;min-width:0;text-align:right}
+  .cat-print-cover .cat-print-kicker{margin-bottom:2mm}
+  .cat-print-cover .cat-print-title{font-size:53pt;line-height:.98;overflow-wrap:anywhere}
+  .cat-print-cover-client{font-size:10pt;color:#40483F;margin-top:2mm}
+  .cat-print-cover-photo{display:block;box-sizing:border-box;width:174mm;height:116mm;max-width:100%;object-fit:cover;margin:5mm auto 2mm;border:1px solid #e2e4da}
+  .cat-print-cover-photo-placeholder{width:174mm;height:116mm;max-width:100%;display:flex;align-items:center;justify-content:center;text-align:center;background:#eeefe7;border:1px dashed #aab6a0;color:#73806b;box-sizing:border-box;margin:5mm auto 2mm;font-size:10pt}
+  .cat-print-cover-meta{display:flex;justify-content:center;align-items:center;gap:8mm;flex-wrap:wrap;text-align:center;font-size:9pt;color:#40483F;margin-top:2mm}
+  .cat-print-ending{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8mm 7mm 14mm}
+  .cat-print-ending-logo{display:block;width:74mm;max-height:32mm;object-fit:contain;margin-bottom:5mm}
+  .cat-print-ending-photo{display:block;width:150mm;height:100mm;max-width:100%;object-fit:cover;margin:3mm auto 5mm;border:1px solid #e2e4da}
+  .cat-print-ending-title{font-family:Cotoris,Georgia,serif;font-size:53pt;line-height:1;color:#456632;margin:2mm 0}
+  .cat-print-ending-subtitle{font-size:12pt;color:#40483F}
 }
 
 /* PRINT REPORT */
@@ -348,11 +385,14 @@ td input{width:100%;border:0;outline:0;background:transparent}
 <div id="catalogueApp" class="catalogue-app no-print">
   <div class="catalogue-card">
     <h1 class="catalogue-heading">Katalog biljaka</h1>
-    <div class="catalogue-sub">Create a visual, client-specific catalogue linked to the active offer and revision. Plant selection is limited to items included in that offer.</div>
+    <div class="catalogue-sub">Create a visual, client-specific catalogue with site photographs and plants selected from the full Stanje Zaliha inventory. Catalogues can also be linked to an offer revision.</div>
     <div class="catalogue-fields">
       <div><label for="catTitle">Catalogue title</label><input id="catTitle" value="Katalog biljaka" placeholder="Katalog biljaka"></div>
       <div><label for="catClient">Client / project</label><input id="catClient" placeholder="e.g. Villa Maris"></div>
       <div><label for="catDate">Date</label><input id="catDate" type="date"></div>
+    </div>
+    <div class="cat-cover-editor-row">
+      <div class="cat-upload"><label class="cat-label" for="catCoverPhoto">Cover photograph · horizontal 3:2</label><input id="catCoverPhoto" type="file" accept="image/*" onchange="cataloguePhotoInput(this,v=>{plantCatalogue.coverPhoto=v})"><p class="muted">Choose a horizontal hero photo for the cover. If you leave this empty, the first garden-area photo will be used.</p><div id="catCoverPhotoPreview"></div></div>
     </div>
     <div class="cat-toolbar">
       <button class="cat-btn" onclick="newPlantCatalogue()">New catalogue</button>
@@ -1053,7 +1093,7 @@ function createPDF(){
 }
 
 // Plant Catalogue builder — uses the existing stock list and embedded Plant Olive logo.
-let plantCatalogue = {id:Date.now(),title:"Katalog biljaka",client:"",date:localDateString(),areas:[],offerId:null,offerNo:"",offerRevision:null};
+let plantCatalogue = {id:Date.now(),title:"Katalog biljaka",client:"",date:localDateString(),coverPhoto:"",areas:[],offerId:null,offerNo:"",offerRevision:null};
 let plantImages=[];let selectedLibraryImageId=null;
 const PLANT_IMAGES_KEY="plantOliveImageLibrary_v1";
 let catalogueSaveTimer=null;
@@ -1094,7 +1134,7 @@ function focusOfferForCatalogue(){hideCatalogueTab();document.querySelector(".ed
 function newPlantCatalogue(){
   if(plantCatalogue.areas?.length && !confirm("Start a new catalogue? The current catalogue will be saved first.")) return;
   savePlantCatalogue(false);
-  plantCatalogue={id:Date.now(),title:"Katalog biljaka",client:o?.customer||"",date:localDateString(),areas:[],offerId:null,offerNo:o?.no||"",offerRevision:null};
+  plantCatalogue={id:Date.now(),title:"Katalog biljaka",client:o?.customer||"",date:localDateString(),coverPhoto:"",areas:[],offerId:null,offerNo:o?.no||"",offerRevision:null};
   addCatalogueArea(false); renderPlantCatalogue(); savePlantCatalogue(false);
 }
 function addCatalogueArea(save=true){
@@ -1120,13 +1160,15 @@ function renderPlantCatalogue(){
   if(!title||!client||!date)return;
   title.value=plantCatalogue.title||"Katalog biljaka";client.value=plantCatalogue.client||"";date.value=plantCatalogue.date||localDateString();
   [title,client,date].forEach((el,idx)=>{el.oninput=()=>{plantCatalogue[["title","client","date"][idx]]=el.value;queueCatalogueSave()}});
+  const coverPreview=document.getElementById("catCoverPhotoPreview");
+  if(coverPreview)coverPreview.innerHTML=plantCatalogue.coverPhoto?`<img class="cat-image-preview" src="${catalogueEscape(resolvePhotoSrc(plantCatalogue.coverPhoto,false))}" alt="Catalogue cover photo"><button type="button" class="cat-btn" style="margin-top:8px" onclick="clearCatalogueCoverPhoto()">Remove cover photo</button>`:'<div class="muted" style="margin-top:6px">No separate cover photo selected yet.</div>';
   const root=document.getElementById("catalogueAreas");
   if(!plantCatalogue.areas.length){root.innerHTML='<div class="cat-empty">Start by adding a garden area, then upload site photos and select plants from Stanje Zaliha.</div>';return;}
   root.innerHTML=plantCatalogue.areas.map((area,ai)=>`<section class="cat-area">
     <div class="cat-area-head"><input aria-label="Garden area title" value="${catalogueEscape(area.title)}" onchange="updateCatalogueAreaTitle(${ai},this.value)" placeholder="Garden area / headline"><button class="cat-btn" onclick="removeCatalogueArea(${ai})">Remove area</button></div>
     <div class="cat-area-body">
-      <div class="cat-upload-row"><div class="cat-upload"><label class="cat-label">Site / garden photograph</label><input type="file" accept="image/*" onchange="cataloguePhotoInput(this,v=>{plantCatalogue.areas[${ai}].sitePhoto=v})">${area.sitePhoto?`<img class="cat-image-preview" src="${catalogueEscape(resolvePhotoSrc(area.sitePhoto,false))}" alt="Site photo">`: ''}</div>
-      <div class="cat-upload"><label class="cat-label" for="catPlantSelect${ai}">Add a plant from the current offer</label><select class="cat-select" id="catPlantSelect${ai}" onchange="addCataloguePlant(${ai},this.value);this.value=''"><option value="">${getAvailableCataloguePlants().length?"Choose a plant…":"All offer plants have been added"}</option>${getAvailableCataloguePlants().map(x=>{const idx=STOCK_DATA.findIndex(s=>String(s.sifra)===String(x.sifra));return `<option value="${idx}">${catalogueEscape(x.naziv)} · ${catalogueEscape(x.sifra)} · ${catalogueEscape(x.jm)} · ${catalogueEscape(x.offerSection)}</option>`}).join("")}</select><p class="muted">Choose from plants included in the active offer. A plant disappears from every selection list after it has been added to this catalogue, and becomes available again if removed.</p></div></div>
+      <div class="cat-upload-row"><div class="cat-upload"><label class="cat-label">Site / garden photograph · horizontal 3:2</label><input type="file" accept="image/*" onchange="cataloguePhotoInput(this,v=>{plantCatalogue.areas[${ai}].sitePhoto=v})">${area.sitePhoto?`<img class="cat-image-preview cat-site-preview" src="${catalogueEscape(resolvePhotoSrc(area.sitePhoto,false))}" alt="Site photo">`: ''}</div>
+      <div class="cat-upload"><label class="cat-label" for="catStockSearch${ai}">Add a plant from Stanje Zaliha</label><div class="cat-stock-picker"><input class="cat-search" type="search" id="catStockSearch${ai}" placeholder="Search by Šifra or Naziv…" autocomplete="off" onfocus="searchCatalogueStock(${ai},this.value)" oninput="searchCatalogueStock(${ai},this.value)" onblur="setTimeout(()=>document.getElementById('catResults${ai}')?.classList.remove('open'),160)"><div class="cat-search-results" id="catResults${ai}"></div></div><p class="muted">Search all items in Stanje Zaliha and select one. Once added, that Šifra disappears from every garden-area selector and becomes available again if you remove the plant.</p></div></div>
       ${area.plants.length?`<div class="cat-plants">${area.plants.map((plant,pi)=>`<div class="cat-plant">
         <button class="remove" onclick="removeCataloguePlant(${ai},${pi})" title="Remove plant">✕</button>
         ${plant.photo?`<img src="${catalogueEscape(resolvePhotoSrc(plant.photo,false))}" alt="${catalogueEscape(plant.name)}">`:`<div class="cat-empty" style="height:170px;display:grid;place-items:center;padding:10px">Plant photo not added</div>`}
@@ -1155,26 +1197,26 @@ function getOfferPlantChoices(){
 }
 function getPlantImageForCode(code){const img=plantImages.find(img=>(img.codes||[]).includes(String(code)));return img?"idb:"+(img.assetId||img.id):"";}
 function getAvailableCataloguePlants(){
-  const alreadyAdded=new Set((plantCatalogue.areas||[]).flatMap(area=>(area.plants||[]).map(p=>String(p.code||""))).filter(Boolean));
-  return getOfferPlantChoices().filter(x=>!alreadyAdded.has(String(x.sifra)));
+  const alreadyAdded=new Set((plantCatalogue.areas||[]).flatMap(area=>(area.plants||[]).map(p=>String(p.code||"").trim())).filter(Boolean));
+  return STOCK_DATA.filter(x=>String(x.sifra||"").trim()&&!alreadyAdded.has(String(x.sifra).trim()));
 }
 function searchCatalogueStock(ai,term){
-  // Kept for compatibility with older open drafts; the current interface uses a dropdown.
   const box=document.getElementById("catResults"+ai);if(!box)return;
-  const q=String(term||"").trim();if(!q){box.classList.remove("open");box.innerHTML="";return;}
-  const choices=getAvailableCataloguePlants().filter(x=>stockMatch(x,q)).slice(0,12);
-  box.innerHTML=choices.map(x=>`<div class="cat-search-option"><strong>${catalogueEscape(x.naziv)}</strong><span>${catalogueEscape(x.sifra)} · ${catalogueEscape(x.jm)} · ${catalogueEscape(x.offerSection)}</span></div>`).join("")||'<div class="cat-search-option">No matching plants available.</div>';
-  box.classList.add("open");
+  const available=getAvailableCataloguePlants();
+  const q=String(term||"").trim();
+  const choices=(q?available.filter(x=>stockMatch(x,q)):available).slice(0,40);
+  const options=choices.map(x=>{const idx=STOCK_DATA.findIndex(s=>String(s.sifra)===String(x.sifra));return `<div class="cat-search-option" role="option" onmousedown="event.preventDefault()" onclick="chooseCatalogueStock(${ai},${idx})"><strong>${catalogueEscape(x.naziv||"")}</strong><span>Šifra: ${catalogueEscape(x.sifra)} · J.M.: ${catalogueEscape(x.jm)} · VPC: ${N(x.vpc)}</span></div>`}).join("");
+  const hint=!available.length?'<div class="cat-search-option cat-search-hint">All Stanje Zaliha items have already been added to this catalogue.</div>':!q?`<div class="cat-search-option cat-search-hint">Showing the first ${Math.min(40,available.length)} items. Type a Šifra or plant name to search all ${available.length} available items.</div>`:choices.length===40?'<div class="cat-search-option cat-search-hint">Showing the first 40 matches. Refine your search for a more specific result.</div>':!choices.length?'<div class="cat-search-option cat-search-hint">No matching available items. Try another Šifra or Naziv.</div>':'';
+  box.innerHTML=options+hint;box.classList.add("open");
 }
 function chooseCatalogueStock(ai,stockIndex){
   const item=STOCK_DATA[stockIndex];if(!item)return;
-  const available=getOfferPlantChoices().find(x=>String(x.sifra)===String(item.sifra));
-  if(!available){alert("This item is not included in the current offer. Add it to the offer first.");return;}
   const area=plantCatalogue.areas[ai];if(!area)return;
-  if((plantCatalogue.areas||[]).some(a=>(a.plants||[]).some(p=>String(p.code)===String(item.sifra)))){alert("This plant is already included in this catalogue. It has been removed from the selection lists.");renderPlantCatalogue();return;}
+  if((plantCatalogue.areas||[]).some(a=>(a.plants||[]).some(p=>String(p.code)===String(item.sifra)))){renderPlantCatalogue();return;}
   area.plants.push({id:Date.now()+Math.random(),name:item.naziv,code:String(item.sifra),description:"",photo:getPlantImageForCode(item.sifra)});
   renderPlantCatalogue();savePlantCatalogue(false);
 }
+function clearCatalogueCoverPhoto(){plantCatalogue.coverPhoto="";renderPlantCatalogue();savePlantCatalogue(false)}
 function queueCatalogueSave(){
   const badge=document.getElementById("catalogueSaveStatus");if(badge)badge.textContent="Saving catalogue on this device…";
   clearTimeout(catalogueSaveTimer);catalogueSaveTimer=setTimeout(()=>savePlantCatalogue(false),450);
@@ -1216,7 +1258,7 @@ function updateCatalogueLinkStatus(){
 function loadCatalogueForOfferRevision(){
   if(!o?.id || !o?.revision)return;
   try{const raw=localStorage.getItem(catalogueRevisionKey(o.id,o.revision));if(raw){plantCatalogue=JSON.parse(raw);localStorage.setItem(CATALOGUE_STORAGE_KEY,JSON.stringify(plantCatalogue));}
-  else {plantCatalogue={id:Date.now(),title:"Katalog biljaka",client:o.customer||"",date:localDateString(),areas:[],offerId:o.id,offerNo:o.no||"",offerRevision:Number(o.revision)};}}
+  else {plantCatalogue={id:Date.now(),title:"Katalog biljaka",client:o.customer||"",date:localDateString(),coverPhoto:"",areas:[],offerId:o.id,offerNo:o.no||"",offerRevision:Number(o.revision)};}}
   catch(e){console.warn("Could not load linked catalogue",e)}
   renderPlantCatalogue();refreshSavedCatalogueOptions();updateCatalogueLinkStatus();
 }
@@ -1285,25 +1327,46 @@ function loadPlantCatalogue(){
 async function createPlantCataloguePDF(){
   savePlantCatalogue(false);
   const title=plantCatalogue.title||"Katalog biljaka", client=plantCatalogue.client||"";
-  const header=(cover=false)=>`<div class="cat-print-top"><div><div class="cat-print-kicker">PLANT OLIVE · ${cover?"BOTANIČKA PREZENTACIJA":"KATALOG BILJAKA"}</div>${cover?`<div class="cat-print-title">${catalogueEscape(title)}</div>`:""}${client?`<div style="font-size:10pt;margin-top:5px">${catalogueEscape(client)}</div>`:""}</div><img class="cat-print-logo" src="${LOGO_DATA}" alt="Plant Olive"></div>`;
-  const footer=`<div class="cat-print-footer"><span>www.plant-olive.com</span><span>info@plant-olive.com</span><span>+385 99 555 2244</span></div>`;
+  const coverArea=(plantCatalogue.areas||[]).find(a=>a.sitePhoto);
+  const coverPhotoRef=plantCatalogue.coverPhoto||coverArea?.sitePhoto||"";
+  const coverPhoto=resolvePhotoSrc(coverPhotoRef,true);
+  const FOOTER_TOKEN="%%CATALOGUE_FOOTER%%";
+  const footer=(pageNo,total)=>`<div class="cat-print-footer"><span>www.plant-olive.com</span><span>info@plant-olive.com</span><span>+385 99 555 2244</span><span>${String(pageNo).padStart(2,"0")} / ${String(total).padStart(2,"0")}</span></div>`;
+  const interiorHeader=`<div class="cat-print-top"><img class="cat-print-logo" src="${LOGO_DATA}" alt="Plant Olive"><div class="cat-print-header-copy"><div class="cat-print-kicker">KATALOG BILJAKA</div>${client?`<div class="cat-print-header-client">${catalogueEscape(client)}</div>`:""}</div></div>`;
   let pages=[];
-  const coverArea=plantCatalogue.areas.find(a=>a.sitePhoto);
-  pages.push(`<div class="cat-print-page cat-print-cover">${header(true)}${coverArea?`<img class="cat-print-cover-photo" src="${catalogueEscape(resolvePhotoSrc(coverArea.sitePhoto,true))}">`:''}<div style="font-size:11pt;color:#5c6956;margin-top:8px">${catalogueEscape(plantCatalogue.date||"")}</div>${footer}</div>`);
-  plantCatalogue.areas.forEach(area=>{
+  pages.push(`<div class="cat-print-page cat-print-cover">
+    <div class="cat-print-cover-head"><img class="cat-print-cover-logo" src="${LOGO_DATA}" alt="Plant Olive"><div class="cat-print-cover-copy"><div class="cat-print-kicker">PLANT OLIVE · MEDITERANSKE BILJKE</div><div class="cat-print-title">${catalogueEscape(title)}</div>${client?`<div class="cat-print-cover-client">${catalogueEscape(client)}</div>`:""}</div></div>
+    ${coverPhoto?`<img class="cat-print-cover-photo" src="${catalogueEscape(coverPhoto)}" alt="Catalogue cover photograph">`:'<div class="cat-print-cover-photo-placeholder">Dodajte horizontalnu naslovnu fotografiju u postavkama kataloga</div>'}
+    <div class="cat-print-cover-meta"><span>${catalogueEscape(plantCatalogue.date||"")}</span><span>www.plant-olive.com</span></div>
+    ${FOOTER_TOKEN}</div>`);
+  (plantCatalogue.areas||[]).forEach(area=>{
     const plants=area.plants||[];
-    if(!plants.length){pages.push(`<div class="cat-print-page">${header()}<div class="cat-print-area">${catalogueEscape(area.title||"")}</div>${area.sitePhoto?`<img class="cat-print-site" src="${catalogueEscape(resolvePhotoSrc(area.sitePhoto,true))}">`:''}${footer}</div>`);return;}
-    for(let i=0;i<plants.length;i+=4){const chunk=plants.slice(i,i+4);pages.push(`<div class="cat-print-page">${header()}<div class="cat-print-area">${catalogueEscape(area.title||"")}</div>${i===0&&area.sitePhoto?`<img class="cat-print-site" src="${catalogueEscape(resolvePhotoSrc(area.sitePhoto,true))}">`:''}<div class="cat-print-plant-grid">${chunk.map(pl=>`<div class="cat-print-plant">${pl.photo?`<img src="${catalogueEscape(resolvePhotoSrc(pl.photo,true))}" alt="${catalogueEscape(pl.name)}">`:`<div style="height:65mm;background:#f0f2ed;display:grid;place-items:center;color:#8a9383;font-size:10pt">Plant Olive</div>`}<div class="cat-print-plant-name">${catalogueEscape(pl.name||"")}</div>${pl.description?`<div class="cat-print-desc">${catalogueEscape(pl.description)}</div>`:""}</div>`).join("")}</div>${footer}</div>`);}
+    const chunks=plants.length?Array.from({length:Math.ceil(plants.length/3)},(_,i)=>plants.slice(i*3,i*3+3)):[[]];
+    chunks.forEach(chunk=>{
+      const sitePhoto=area.sitePhoto?resolvePhotoSrc(area.sitePhoto,true):"";
+      const plantRows=chunk.map(pl=>{
+        const photoRef=pl.photo||getPlantImageForCode(pl.code);
+        const photoSrc=resolvePhotoSrc(photoRef,true);
+        return `<div class="cat-print-plant-row">${photoSrc?`<img class="cat-print-plant-photo" src="${catalogueEscape(photoSrc)}" alt="${catalogueEscape(pl.name||"Plant photo")}">`:'<div class="cat-print-plant-photo-placeholder">Plant<br>photo</div>'}<div class="cat-print-plant-copy"><div class="cat-print-plant-name">${catalogueEscape(pl.name||"")}</div>${pl.description?`<div class="cat-print-desc">${catalogueEscape(pl.description)}</div>`:""}</div></div>`;
+      }).join("");
+      pages.push(`<div class="cat-print-page cat-print-interior">${interiorHeader}<div class="cat-print-area">${catalogueEscape(area.title||"")}</div><div class="cat-print-layout"><div class="cat-print-site-panel">${sitePhoto?`<img class="cat-print-site" src="${catalogueEscape(sitePhoto)}" alt="${catalogueEscape(area.title||"Garden area")}">`:'<div class="cat-print-site-placeholder">Dodajte fotografiju ove vrtne površine</div>'}</div><div class="cat-print-plant-list">${plantRows||'<div class="cat-print-empty-list">Biljke za ovu površinu još nisu dodane.</div>'}</div></div>${FOOTER_TOKEN}</div>`);
+    });
   });
-  const thanksImgRef=plantCatalogue.areas.flatMap(a=>a.plants||[]).find(p=>p.photo)?.photo||coverArea?.sitePhoto||"";const thanksImg=resolvePhotoSrc(thanksImgRef,true);
-  pages.push(`<div class="cat-print-page cat-print-cover">${header(true)}${thanksImg?`<img class="cat-print-cover-photo" src="${thanksImg}">`:''}<div class="cat-print-title" style="font-size:42pt">Hvala na pažnji!</div><div style="font-size:13pt;margin-top:8px">Plant Olive</div>${footer}</div>`);
-  document.getElementById("cataloguePrintReport").innerHTML=pages.join("");
+  const thanksImgRef=(plantCatalogue.areas||[]).flatMap(a=>a.plants||[]).find(p=>p.photo)?.photo||coverPhotoRef||"";
+  const thanksImg=resolvePhotoSrc(thanksImgRef,true);
+  pages.push(`<div class="cat-print-page cat-print-ending"><img class="cat-print-ending-logo" src="${LOGO_DATA}" alt="Plant Olive">${thanksImg?`<img class="cat-print-ending-photo" src="${catalogueEscape(thanksImg)}" alt="Plant Olive garden">`:''}<div class="cat-print-ending-title">Hvala na pažnji!</div><div class="cat-print-ending-subtitle">Plant Olive · www.plant-olive.com</div>${FOOTER_TOKEN}</div>`);
+  const totalPages=pages.length;
+  document.getElementById("cataloguePrintReport").innerHTML=pages.map((page,i)=>page.replace(FOOTER_TOKEN,footer(i+1,totalPages))).join("");
   document.body.classList.add("catalogue-print-active");
+  // Dynamically override the offer report's portrait @page rule only for this catalogue print.
+  // This guarantees each catalogue page uses A4 landscape; the normal offer PDF remains portrait.
+  let pageRule=document.getElementById("catalogueLandscapePrintRule");
+  if(!pageRule){pageRule=document.createElement("style");pageRule.id="catalogueLandscapePrintRule";pageRule.media="print";pageRule.textContent="@page { size: A4 landscape; margin: 8mm 9mm; }";document.head.appendChild(pageRule);}
   const printImages=[...document.querySelectorAll("#cataloguePrintReport img")];
   await Promise.all(printImages.map(img=>img.decode?img.decode().catch(()=>{}):new Promise(resolve=>{if(img.complete)return resolve();img.onload=resolve;img.onerror=resolve;})));
   setTimeout(()=>window.print(),100);
 }
-window.addEventListener("afterprint",()=>document.body.classList.remove("catalogue-print-active"));
+window.addEventListener("afterprint",()=>{document.body.classList.remove("catalogue-print-active");document.getElementById("catalogueLandscapePrintRule")?.remove();});
 try{(async()=>{await loadPlantImages();await loadPlantCatalogue()})().catch(e=>console.warn("Catalogue initialisation failed",e))}catch(e){console.warn("Catalogue initialisation failed",e)}
 
 const screenLogo=document.getElementById("screenLogo");
