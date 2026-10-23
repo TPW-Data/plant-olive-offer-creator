@@ -116,22 +116,22 @@ td input{width:100%;border:0;outline:0;background:transparent}
   .cat-print-page>*{z-index:1}
   /* Exact A4 landscape catalogue geometry from Plant Olive specification. */
   .cat-print-interior{padding:0;background:#F7F5EE}
-  .cat-print-top{position:absolute;left:10mm;top:10mm;width:277mm;height:24mm;box-sizing:border-box;margin:0;padding:0;display:block}
-  .cat-print-area{position:absolute;left:0;top:0;width:170mm;height:16mm;display:flex;align-items:center;box-sizing:border-box;font-family:Cotoris,Georgia,serif;font-size:22pt;line-height:1.02;margin:0;font-weight:400;color:#355735;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .cat-print-header-rule{position:absolute;left:170mm;top:4mm;width:70.5mm;height:0;border-top:0.7pt solid #355735;box-sizing:border-box;margin:0}
-  .cat-print-header-label{position:absolute;left:242mm;top:3.5mm;width:35mm;height:6mm;box-sizing:border-box;text-align:right;font-family:Cotoris,Georgia,serif;font-size:16pt;line-height:6mm;color:#333333;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:clip;margin:0}
+  .cat-print-top{position:absolute;left:10mm;top:10mm;width:277mm;height:16mm;box-sizing:border-box;margin:0;padding:0;display:flex;align-items:baseline;gap:3mm}
+  .cat-print-area{position:static;flex:0 1 auto;width:max-content;max-width:170mm;min-width:0;height:16mm;display:block;box-sizing:border-box;font-family:Cotoris,Georgia,serif;font-size:22pt;line-height:16mm;margin:0;font-weight:400;color:#355735;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cat-print-header-rule{position:static;flex:1 1 auto;min-width:5mm;height:0;border-top:0.7pt solid #355735;box-sizing:border-box;margin:0;align-self:baseline}
+  .cat-print-header-label{position:static;flex:0 0 auto;width:auto;max-width:35mm;height:6mm;box-sizing:border-box;text-align:right;font-family:Cotoris,Georgia,serif;font-size:16pt;line-height:6mm;color:#333333;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:clip;margin:0}
   .cat-print-kicker{font-size:8pt;letter-spacing:1.8px;text-transform:uppercase;color:#355735}
   .cat-print-title{font-family:Cotoris,Georgia,serif;font-size:53pt;line-height:1;font-weight:400;margin:0;color:#355735}
-  .cat-print-layout{position:absolute;left:10mm;top:34mm;display:grid;grid-template-columns:165mm 104mm;gap:8mm;width:277mm;height:104mm;min-height:104mm;max-height:104mm;box-sizing:border-box;align-items:start;margin:0}
-  .cat-print-site-panel{width:165mm;height:98mm;min-width:165mm;max-width:165mm;min-height:98mm;max-height:98mm;align-self:start;display:block;overflow:hidden;box-sizing:border-box}
-  .cat-print-site{display:block;width:165mm;height:98mm;min-width:165mm;max-width:165mm;min-height:98mm;max-height:98mm;object-fit:cover;object-position:center;border:0;box-sizing:border-box}
-  .cat-print-site-placeholder{width:165mm;height:98mm;min-width:165mm;max-width:165mm;display:flex;align-items:center;justify-content:center;text-align:center;background:#F0EEE6;border:1px dashed #aab6a0;color:#5e685b;font-size:10pt;box-sizing:border-box}
-  .cat-print-plant-list{width:104mm;height:104mm;min-width:104mm;max-width:104mm;min-height:104mm;max-height:104mm;display:grid;grid-template-rows:repeat(3,minmax(0,1fr));gap:0;align-self:start;box-sizing:border-box}
-  .cat-print-plant-row{min-height:0;height:auto;box-sizing:border-box;display:grid;grid-template-columns:34mm minmax(0,1fr);gap:8mm;align-items:center;padding:0;border-bottom:0.5pt solid #e2e4da;break-inside:avoid;overflow:hidden}
+  .cat-print-layout{position:absolute;left:10mm;top:34mm;display:grid;grid-template-columns:170mm 99mm;gap:8mm;width:277mm;height:108mm;min-height:108mm;max-height:108mm;box-sizing:border-box;align-items:start;margin:0}
+  .cat-print-site-panel{width:170mm;height:102mm;min-width:170mm;max-width:170mm;min-height:102mm;max-height:102mm;align-self:start;display:block;overflow:hidden;box-sizing:border-box}
+  .cat-print-site{display:block;width:170mm;height:102mm;min-width:170mm;max-width:170mm;min-height:102mm;max-height:102mm;object-fit:cover;object-position:center;border:0;box-sizing:border-box}
+  .cat-print-site-placeholder{width:170mm;height:102mm;min-width:170mm;max-width:170mm;min-height:102mm;max-height:102mm;display:flex;align-items:center;justify-content:center;text-align:center;background:#F0EEE6;border:1px dashed #aab6a0;color:#5e685b;font-size:10pt;box-sizing:border-box}
+  .cat-print-plant-list{width:99mm;height:108mm;min-width:99mm;max-width:99mm;min-height:108mm;max-height:108mm;display:grid;grid-template-rows:repeat(3,36mm);gap:0;align-self:start;box-sizing:border-box}
+  .cat-print-plant-row{min-height:0;height:36mm;box-sizing:border-box;display:grid;grid-template-columns:36mm 58mm;gap:5mm;align-items:center;padding:0;border-bottom:0.5pt solid #e2e4da;break-inside:avoid;overflow:hidden}
   .cat-print-plant-row:last-child{border-bottom:0}
-  .cat-print-plant-photo{display:block;width:34mm;height:34mm;min-width:34mm;min-height:34mm;max-width:34mm;max-height:34mm;justify-self:center;align-self:center;border-radius:50%;object-fit:cover;object-position:center;background:#e7eadf;border:0;box-sizing:border-box}
-  .cat-print-plant-photo-placeholder{width:34mm;height:34mm;min-width:34mm;min-height:34mm;max-width:34mm;max-height:34mm;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;background:#e7eadf;border:0;color:#5e685b;font-size:8pt;box-sizing:border-box}
-  .cat-print-plant-copy{width:62mm;max-width:62mm;min-width:0;max-height:26mm;overflow:hidden;overflow-wrap:anywhere;box-sizing:border-box;align-self:center}
+  .cat-print-plant-photo{display:block;width:36mm;height:36mm;min-width:36mm;min-height:36mm;max-width:36mm;max-height:36mm;justify-self:center;align-self:center;border-radius:50%;object-fit:cover;object-position:center;background:#e7eadf;border:0;box-sizing:border-box}
+  .cat-print-plant-photo-placeholder{width:36mm;height:36mm;min-width:36mm;min-height:36mm;max-width:36mm;max-height:36mm;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;background:#e7eadf;border:0;color:#5e685b;font-size:8pt;box-sizing:border-box}
+  .cat-print-plant-copy{width:58mm;max-width:58mm;min-width:0;max-height:30mm;overflow:hidden;overflow-wrap:anywhere;box-sizing:border-box;align-self:center}
   .cat-print-plant-name{font-family:Cotoris,Georgia,serif;font-size:10.5pt;font-weight:700;line-height:1.12;color:#20231f;margin:0 0 1.5mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cat-print-desc{font-family:Arial,Helvetica,sans-serif;font-size:8.5pt;line-height:1.28;color:#333333;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;max-height:11mm}
   .cat-print-empty-list{height:100%;border:1px dashed #d5dbcf;display:flex;align-items:center;justify-content:center;color:#5e685b;font-size:10pt;text-align:center;padding:8mm;box-sizing:border-box}
